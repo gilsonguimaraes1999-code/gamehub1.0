@@ -66,8 +66,12 @@ function HubLayout() {
     <div className="min-h-screen manual-app-shell">
       <HubSidebar />
       <main
-        className="lg:ml-[280px] min-h-screen bg-black bg-no-repeat bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: "url('/manual-categories-bg.png')", backgroundAttachment: "fixed" }}
+        className="lg:ml-[280px] min-h-screen bg-black bg-no-repeat bg-center bg-fixed"
+        style={{
+          backgroundImage: "url('/hub-internal-bg.png')",
+          backgroundAttachment: "fixed",
+          backgroundSize: "100% 100%",
+        }}
       >
         {impersonating && (
           <div className="sticky top-0 z-40 bg-[#d4af37] text-black border-b-2 border-black/20 shadow-lg">
