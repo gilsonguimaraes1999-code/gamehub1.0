@@ -62,7 +62,7 @@ body {
   .manual-app-shell {
     background-color: #0a0a0a;
     background-image: url('/hub-internal-bg.png');
-    background-size: 100% 100%;
+    background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
     background-attachment: fixed;

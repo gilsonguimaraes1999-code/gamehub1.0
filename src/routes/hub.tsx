@@ -70,7 +70,7 @@ function HubLayout() {
         style={{
           backgroundImage: "url('/hub-internal-bg.png')",
           backgroundAttachment: "fixed",
-          backgroundSize: "100% 100%",
+          backgroundSize: "cover",
         }}
       >
         {impersonating && (
