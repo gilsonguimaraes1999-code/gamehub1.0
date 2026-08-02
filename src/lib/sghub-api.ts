@@ -1,11 +1,12 @@
 // Client-side helpers to talk to /api/apps-script (which proxies Google Apps Script)
+import { translateCurrent as t } from "@/lib/i18n";
 
 export async function appsScriptGet<T = unknown>(query: Record<string, string>): Promise<T> {
   const params = new URLSearchParams(query).toString();
   const res = await fetch(`/api/apps-script?${params}`, { method: "GET" });
   const data = (await res.json()) as T & { success?: boolean; message?: string };
-  if (!res.ok) throw new Error(data?.message || `Apps Script GET falhou (${res.status})`);
-  if (data?.success === false) throw new Error(data.message || "Apps Script GET falhou.");
+  if (!res.ok) throw new Error(data?.message || `${t("api.getFail")} (${res.status})`);
+  if (data?.success === false) throw new Error(data.message || `${t("api.getFail")}.`);
   return data;
 }
 
@@ -16,8 +17,8 @@ export async function appsScriptPost<T = unknown>(body: Record<string, unknown>)
     body: JSON.stringify(body),
   });
   const data = (await res.json()) as T & { success?: boolean; message?: string };
-  if (!res.ok) throw new Error(data?.message || `Apps Script POST falhou (${res.status})`);
-  if (data?.success === false) throw new Error(data.message || "Apps Script POST falhou.");
+  if (!res.ok) throw new Error(data?.message || `${t("api.postFail")} (${res.status})`);
+  if (data?.success === false) throw new Error(data.message || `${t("api.postFail")}.`);
   return data;
 }
 
@@ -27,7 +28,7 @@ export async function uploadImage(base64OrDataUrl: string): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image: base64OrDataUrl }),
   });
-  if (!res.ok) throw new Error(`Upload falhou (${res.status})`);
+  if (!res.ok) throw new Error(`${t("api.uploadFail")} (${res.status})`);
   const data = (await res.json()) as { url: string };
   return data.url;
 }
@@ -153,7 +154,7 @@ function normalizePromocao(p: Partial<Promocao>): Promocao {
     status: p.status || "ativo",
     tipo: p.tipo || "vip_mensal",
     nome: p.nome || "",
-    nome_interno: p.nome_interno || p.nome || p.titulo || "Nova Promoção",
+    nome_interno: p.nome_interno || p.nome || p.titulo || t("home.newPromotion"),
     descricao: p.descricao || "",
     cupom: p.cupom || "",
     validade: p.validade || "",

@@ -7,87 +7,81 @@ import { fetchBootstrap, type Promocao } from "@/lib/sghub-api";
 import { useAuthSession } from "@/lib/auth-store";
 import { hasPermission } from "@/lib/permissions";
 import ModalPreview from "@/components/sghub/ModalPreview";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/hub/detalhes/$id")({
   ssr: false,
   component: DetalhesPage,
 });
 
-const TIPO_LABELS: Record<string, string> = {
-  vip_mensal: "VIP MENSAL",
-  oferta_flash: "OFERTA FLASH",
-  link_exclusivo: "LINK EXCLUSIVO",
-  battlepass: "BATTLEPASS",
-  oferta_cidade: "OFERTA DA CIDADE",
-};
-
-const TIPO_ARTIGO: Record<string, "DO" | "DA"> = {
-  vip_mensal: "DO",
-  oferta_flash: "DA",
-  link_exclusivo: "DO",
-  battlepass: "DO",
-  oferta_cidade: "DA",
+const TIPO_LABEL_KEYS: Record<string, string> = {
+  vip_mensal: "promotion.type.vip_mensal",
+  oferta_flash: "promotion.type.oferta_flash",
+  link_exclusivo: "promotion.type.link_exclusivo",
+  battlepass: "promotion.type.battlepass",
+  oferta_cidade: "promotion.type.oferta_cidade",
 };
 
 type Field = { label: string; value: string; isImage?: boolean };
 
-function fieldsFor(p: Promocao): Field[] {
+function fieldsFor(p: Promocao, t: (key: string, vars?: Record<string, string | number>) => string): Field[] {
   const v = (x?: string) => (x && String(x).trim() ? String(x) : "");
   const tipo = p.tipo || "vip_mensal";
-  const suffix = `${TIPO_ARTIGO[tipo] || "DO"} ${TIPO_LABELS[tipo] || tipo.toUpperCase()}`;
+  const suffix = TIPO_LABEL_KEYS[tipo] ? t(TIPO_LABEL_KEYS[tipo]) : tipo.toUpperCase();
   const f = (base: string, value: string, isImage = false): Field => ({
-    label: `${base} ${suffix}`,
+    label: `${base} - ${suffix}`,
     value,
     isImage,
   });
 
   if (tipo === "oferta_flash") return [
-    f("TÍTULO", v(p.titulo)),
-    f("SUBTÍTULO", v(p.subtitulo)),
-    f("PRODUTO", v(p.produto)),
-    f("PREÇO ANTIGO", v(p.preco_antigo)),
-    f("PREÇO", v(p.preco)),
-    f("DURAÇÃO", v(p.duracao)),
-    f("IMAGEM", v(p.imagem), true),
+    f(t("common.title"), v(p.titulo)),
+    f(t("common.subtitle"), v(p.subtitulo)),
+    f(t("common.product"), v(p.produto)),
+    f(t("promotion.field.oldPrice"), v(p.preco_antigo)),
+    f(t("promotion.field.price"), v(p.preco)),
+    f(t("common.duration"), v(p.duracao)),
+    f(t("common.image"), v(p.imagem), true),
   ];
   if (tipo === "battlepass") return [
-    f("NOME", v(p.nome)),
-    f("DESCRIÇÃO", v(p.descricao)),
-    f("IMAGEM", v(p.imagem), true),
-    f("MINIATURA", v(p.miniatura), true),
+    f(t("common.name"), v(p.nome)),
+    f(t("common.description"), v(p.descricao)),
+    f(t("common.image"), v(p.imagem), true),
+    f(t("promotion.field.thumbnail"), v(p.miniatura), true),
   ];
   if (tipo === "oferta_cidade") return [
-    f("TEXTO DO BOTÃO", v(p.texto_botao)),
-    f("PREÇO TOTAL", v(p.preco_total)),
-    f("PREÇO COM DESCONTO", v(p.preco_desconto)),
-    f("PERCENTUAL DE DESCONTO", v(p.percentual_desconto)),
-    f("TÍTULO", v(p.titulo)),
-    f("VÍDEO", v(p.video)),
-    f("CUPOM", v(p.cupom)),
+    f(t("promotion.field.buttonText"), v(p.texto_botao)),
+    f(t("promotion.field.totalPrice"), v(p.preco_total)),
+    f(t("promotion.field.discountPrice"), v(p.preco_desconto)),
+    f(t("promotion.field.discountPercent"), v(p.percentual_desconto)),
+    f(t("common.title"), v(p.titulo)),
+    f(t("promotion.field.video"), v(p.video)),
+    f(t("common.coupon"), v(p.cupom)),
   ];
   if (tipo === "link_exclusivo") return [
-    f("IMAGEM", v(p.imagem), true),
+    f(t("common.image"), v(p.imagem), true),
   ];
   return [
-    f("NOME", v(p.nome)),
-    f("CUPOM", v(p.cupom)),
-    f("DESCRIÇÃO", v(p.descricao)),
-    f("VALIDADE", v(p.validade)),
-    f("IMAGEM", v(p.imagem), true),
+    f(t("common.name"), v(p.nome)),
+    f(t("common.coupon"), v(p.cupom)),
+    f(t("common.description"), v(p.descricao)),
+    f(t("common.validity"), v(p.validade)),
+    f(t("common.image"), v(p.imagem), true),
   ];
 }
 
-function CopyButton({ text, label = "COPIAR BLOCO", disabled }: { text: string; label?: string; disabled?: boolean }) {
+function CopyButton({ text, label, disabled }: { text: string; label?: string; disabled?: boolean }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const onClick = async () => {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success("Copiado!");
+      toast.success(t("details.copySuccess"));
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      toast.error("Não foi possível copiar.");
+      toast.error(t("details.copyError"));
     }
   };
   if (copied) {
@@ -96,7 +90,7 @@ function CopyButton({ text, label = "COPIAR BLOCO", disabled }: { text: string; 
         type="button"
         className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-black"
       >
-        <Check size={13} /> Copiado!
+        <Check size={13} /> {t("common.copied")}
       </button>
     );
   }
@@ -107,12 +101,13 @@ function CopyButton({ text, label = "COPIAR BLOCO", disabled }: { text: string; 
       disabled={disabled || !text}
       className="inline-flex items-center gap-1.5 rounded-md bg-[#d4af37] px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-black hover:brightness-110 disabled:opacity-30 disabled:hover:brightness-100"
     >
-      <Copy size={13} /> {label}
+      <Copy size={13} /> {label || t("common.copyBlock")}
     </button>
   );
 }
 
 function DetalhesPage() {
+  const { t } = useI18n();
   const { id } = useParams({ from: "/hub/detalhes/$id" });
   const { session } = useAuthSession();
   const { data, isLoading, error } = useQuery({
@@ -162,25 +157,25 @@ function DetalhesPage() {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-red-300">
-          Você não tem permissão para visualizar promoções.
+          {t("home.noPermission")}
         </div>
       </div>
     );
   }
   if (isLoading) {
-    return <div className="p-10 text-center text-white/40 text-sm uppercase tracking-widest">Carregando detalhes...</div>;
+    return <div className="p-10 text-center text-white/40 text-sm uppercase tracking-widest">{t("details.loading")}</div>;
   }
   if (error) {
-    return <div className="p-6 text-red-300">Erro: {(error as Error).message}</div>;
+    return <div className="p-6 text-red-300">{t("details.error", { message: (error as Error).message })}</div>;
   }
   if (!promocao) {
     return (
       <div className="mx-auto max-w-3xl p-6">
         <Link to="/hub" className="mb-4 inline-flex items-center gap-2 text-white/60 hover:text-white text-xs font-black uppercase tracking-widest">
-          <ArrowLeft size={14} /> Voltar
+          <ArrowLeft size={14} /> {t("common.back")}
         </Link>
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-10 text-center text-white/50">
-          Promoção não encontrada.
+          {t("details.notFound")}
         </div>
       </div>
     );
@@ -188,9 +183,9 @@ function DetalhesPage() {
 
   const status = (promocao.status || "").toLowerCase();
   const isAtivo = status === "ativo";
-  const tipoLabel = TIPO_LABELS[promocao.tipo] || (promocao.tipo || "").toUpperCase();
-  const title = promocao.nome_interno || promocao.nome || promocao.titulo || "Detalhes";
-  const fields = fieldsFor(promocao);
+  const tipoLabel = TIPO_LABEL_KEYS[promocao.tipo] ? t(TIPO_LABEL_KEYS[promocao.tipo]) : (promocao.tipo || "").toUpperCase();
+  const title = promocao.nome_interno || promocao.nome || promocao.titulo || t("common.details");
+  const fields = fieldsFor(promocao, t);
 
 
   return (
@@ -200,7 +195,7 @@ function DetalhesPage() {
         <Link
           to="/hub"
           className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:border-[#d4af37]/40 hover:text-[#f9e29f]"
-          aria-label="Voltar"
+          aria-label={t("common.back")}
         >
           <ArrowLeft size={18} />
         </Link>
@@ -219,7 +214,7 @@ function DetalhesPage() {
                   : "bg-red-500/15 border-red-500/50 text-red-300"
               }`}
             >
-              {isAtivo ? "Ativo" : "Inativo"}
+              {isAtivo ? t("common.active") : t("common.inactive")}
             </span>
             {canEdit && (
               <Link
@@ -227,7 +222,7 @@ function DetalhesPage() {
                 params={{ id: promocao.id }}
                 className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white/70 hover:border-[#d4af37]/40 hover:text-[#f9e29f]"
               >
-                <Pencil size={11} /> Editar
+                <Pencil size={11} /> {t("common.edit")}
               </Link>
             )}
           </div>
@@ -281,13 +276,13 @@ function DetalhesPage() {
         <div className="mt-10">
           <div className="mb-5 flex items-center justify-center">
             <span className="text-[11px] font-black uppercase tracking-[0.25em] text-white/60">
-              Links por Cidade
+              {t("details.linksByCity")}
             </span>
           </div>
 
           <div className="space-y-8">
             {linksByCountry.map(([countryId, cities]) => {
-              const countryName = countryNames.get(countryId) || countryId || "Outros";
+              const countryName = countryNames.get(countryId) || countryId || t("details.other");
               return (
                 <div key={countryId}>
                   <div className="mb-3 flex items-center gap-2">
@@ -298,7 +293,7 @@ function DetalhesPage() {
                   </div>
                   <div className="space-y-3">
                     {cities.map((c, i) => {
-                      const cityName = cityNames.get(c.cityId) || c.cityId || `Cidade ${i + 1}`;
+                      const cityName = cityNames.get(c.cityId) || c.cityId || `${t("common.city")} ${i + 1}`;
                       return (
                         <div
                           key={`${c.cityId}-${i}`}
@@ -309,16 +304,16 @@ function DetalhesPage() {
                           </div>
                           <div className="grid grid-cols-[1fr_auto] items-center gap-2">
                             <span className="min-w-0 truncate rounded-md bg-black/40 px-3 py-1.5 font-mono text-[11px] text-white/70">
-                              {c.url || <span className="text-white/25">— (link da loja)</span>}
+                              {c.url || <span className="text-white/25">{t("details.storeLinkEmpty")}</span>}
                             </span>
-                            <CopyButton text={c.url} label="Copiar link" disabled={!c.url} />
+                            <CopyButton text={c.url} label={t("common.copyLink")} disabled={!c.url} />
                           </div>
                           {promocao.tipo === "oferta_cidade" && (
                             <div className="grid grid-cols-[64px_1fr_auto] items-center gap-2">
                               {c.imagem ? (
                                 <img
                                   src={c.imagem}
-                                  alt={`Imagem ${cityName}`}
+                                  alt={t("details.imageAlt", { name: cityName })}
                                   className="h-14 w-14 rounded-lg border border-white/10 object-cover bg-black/40"
                                   onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
                                 />
@@ -326,9 +321,9 @@ function DetalhesPage() {
                                 <div className="h-14 w-14 rounded-lg border border-white/10 bg-black/40" />
                               )}
                               <span className="min-w-0 truncate rounded-md bg-black/40 px-3 py-1.5 font-mono text-[11px] text-white/70">
-                                {c.imagem || <span className="text-white/25">— (imagem da oferta)</span>}
+                                {c.imagem || <span className="text-white/25">{t("details.offerImageEmpty")}</span>}
                               </span>
-                              <CopyButton text={c.imagem || ""} label="Copiar imagem" disabled={!c.imagem} />
+                              <CopyButton text={c.imagem || ""} label={t("common.copyImage")} disabled={!c.imagem} />
                             </div>
                           )}
                         </div>
@@ -367,9 +362,10 @@ function PreviewPorCidade({
   cityToCountry: Map<string, string>;
 }) {
   const links = promocao.links_por_cidade || [];
+  const { t } = useI18n();
   const [selected, setSelected] = useState(0);
   const current = links[selected] || links[0];
-  const cityName = cityNames.get(current.cityId) || current.cityId || `Cidade ${selected + 1}`;
+  const cityName = cityNames.get(current.cityId) || current.cityId || `${t("common.city")} ${selected + 1}`;
   const countryId = current.countryId || cityToCountry.get(current.cityId) || "";
   const countryName = countryNames.get(countryId) || "";
 
@@ -377,13 +373,13 @@ function PreviewPorCidade({
     <div className="mt-10">
       <div className="mb-5 flex items-center justify-center">
         <span className="text-[11px] font-black uppercase tracking-[0.25em] text-white/60">
-          Preview por Cidade
+          {t("details.previewByCity")}
         </span>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {links.map((l, i) => {
-          const name = cityNames.get(l.cityId) || l.cityId || `Cidade ${i + 1}`;
+          const name = cityNames.get(l.cityId) || l.cityId || `${t("common.city")} ${i + 1}`;
           const active = i === selected;
           return (
             <button

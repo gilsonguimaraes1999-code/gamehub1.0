@@ -6,6 +6,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { appsScriptPost, fetchBootstrap } from "@/lib/sghub-api";
 import { setStoredSession, type SgHubSession } from "@/lib/auth-store";
 import { toPermissionArray } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
+import LanguageSelector from "@/components/sghub/LanguageSelector";
 
 const SAVED_LOGIN_KEY = "sg_auth";
 const LOGIN_LOGO_URL = "/alpha-logo.png";
@@ -29,6 +31,7 @@ interface LoginResp {
 }
 
 export default function Login() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [usuario, setUsuario] = useState("");
@@ -61,13 +64,13 @@ export default function Login() {
   const handleUserSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!usuario.trim()) { setError("Informe o usuário."); return; }
+    if (!usuario.trim()) { setError(t("login.userRequired")); return; }
     setStep("password");
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!usuario.trim()) { setStep("user"); setError("Informe o usuário."); return; }
+    if (!usuario.trim()) { setStep("user"); setError(t("login.userRequired")); return; }
     setError("");
     setLoading(true);
     try {
@@ -80,7 +83,7 @@ export default function Login() {
       const nested = (raw.conta || raw.usuario || {}) as Record<string, unknown>;
       const acc = { ...nested, ...raw } as Record<string, unknown>;
       if (!resp?.success) {
-        throw new Error(resp?.message || "Credenciais não reconhecidas.");
+        throw new Error(resp?.message || t("login.invalidCredentials"));
       }
       const asStr = (v: unknown, fallback = ""): string =>
         typeof v === "string" || typeof v === "number" ? String(v) : fallback;
@@ -106,7 +109,7 @@ export default function Login() {
       }
       navigate({ to: "/hub", replace: true });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro no login.";
+      const msg = err instanceof Error ? err.message : t("login.error");
       setError(msg);
       setLoading(false);
     }
@@ -115,7 +118,7 @@ export default function Login() {
   return (
     <section
       className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-10"
-      aria-label="Acesso ao SantaGroup Hub"
+      aria-label={t("login.aria")}
     >
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[22rem] w-[22rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#d4af37]/[0.04] blur-[80px]" />
 
@@ -154,7 +157,7 @@ export default function Login() {
                   onClick={handleStart}
                   className="group relative flex w-full items-center justify-center overflow-hidden rounded-lg border border-[#d4af37]/50 bg-black/50 px-8 py-4 text-sm font-black uppercase tracking-[0.42em] text-white/85 shadow-[0_0_36px_rgba(212,175,55,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#d4af37] hover:text-white hover:shadow-[0_0_48px_rgba(212,175,55,0.36),inset_0_1px_0_rgba(255,255,255,0.12)]"
                 >
-                  <span className="relative z-10">Acessar</span>
+                  <span className="relative z-10">{t("login.access")}</span>
                   <span className="absolute inset-0 -translate-x-[110%] bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-[110%]" aria-hidden="true" />
                 </button>
               </motion.div>
@@ -172,10 +175,10 @@ export default function Login() {
                     type="text"
                     value={usuario}
                     onChange={(e) => setUsuario(e.target.value)}
-                    placeholder="Usuário"
+                    placeholder={t("login.userPlaceholder")}
                     className="w-full bg-transparent px-2 py-2 text-sm text-white placeholder-white/40 outline-none"
                   />
-                  <button type="submit" aria-label="Continuar" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black shadow-[0_0_18px_rgba(212,175,55,0.55)] transition-transform hover:-translate-y-0.5">
+                  <button type="submit" aria-label={t("login.continue")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black shadow-[0_0_18px_rgba(212,175,55,0.55)] transition-transform hover:-translate-y-0.5">
                     <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
                   </button>
                 </div>
@@ -189,7 +192,7 @@ export default function Login() {
                 )}
                 <button type="button" onClick={() => { setStep("user"); setError(""); }} className="inline-flex items-center gap-1.5 bg-transparent px-1 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-white/50 transition-all hover:text-white">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
-                  Voltar para usuário
+                  {t("login.backToUser")}
                 </button>
                 <div className="flex items-center gap-2 rounded-2xl border border-[#d4af37]/60 bg-black/60 pl-4 pr-2 py-2 shadow-[0_0_28px_rgba(212,175,55,0.18)] focus-within:border-[#d4af37]">
                   <Lock className="h-4 w-4 text-[#d4af37] shrink-0" />
@@ -198,26 +201,30 @@ export default function Login() {
                     type={showPassword ? "text" : "password"}
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
-                    placeholder="Senha"
+                    placeholder={t("login.passwordPlaceholder")}
                     className="w-full bg-transparent px-2 py-2 text-sm text-white placeholder-white/40 outline-none"
                   />
-                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="text-white/50 hover:text-white px-1" aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="text-white/50 hover:text-white px-1" aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
-                  <button type="submit" disabled={loading} aria-label="Entrar" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black shadow-[0_0_18px_rgba(212,175,55,0.55)] transition-transform hover:-translate-y-0.5 disabled:opacity-60">
+                  <button type="submit" disabled={loading} aria-label={t("login.enter")} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black shadow-[0_0_18px_rgba(212,175,55,0.55)] transition-transform hover:-translate-y-0.5 disabled:opacity-60">
                     {loading ? (<span className="h-4 w-4 animate-spin rounded-full border-2 border-black/70 border-t-transparent" />) : (<ArrowRight className="h-5 w-5" strokeWidth={2.5} />)}
                   </button>
                 </div>
                 <label className="flex items-center justify-center gap-2 pt-2 text-[10px] font-black uppercase tracking-[0.3em] text-white/50 cursor-pointer select-none">
                   <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="peer sr-only" />
                   <span aria-hidden="true" className="inline-block h-3 w-3 rounded-full border border-[#d4af37]/60 bg-transparent transition-all peer-checked:bg-[#d4af37] peer-checked:shadow-[0_0_8px_rgba(212,175,55,0.7)]" />
-                  Lembrar acesso
+                  {t("login.remember")}
                 </label>
               </motion.form>
             )}
           </AnimatePresence>
         </div>
       </motion.div>
+
+      <div className="fixed bottom-5 right-5 z-50 sm:bottom-6 sm:right-6">
+        <LanguageSelector />
+      </div>
 
       <AnimatePresence>
         {bootLoading && (
@@ -234,10 +241,10 @@ export default function Login() {
                 <RefreshCw size={30} className="animate-spin" />
               </div>
               <h2 className="font-display text-xl font-black text-white uppercase tracking-widest">
-                Carregando
+                {t("login.loadingTitle")}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-white/55">
-                Preparando o Hub Ingame e sincronizando seus dados...
+                {t("login.loadingText")}
               </p>
             </div>
           </motion.div>

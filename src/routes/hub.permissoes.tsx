@@ -6,6 +6,7 @@ import { ChevronLeft, Save, ShieldCheck, Lock } from "lucide-react";
 import { fetchBootstrap, salvarInterface } from "@/lib/sghub-api";
 import { useAuthSession } from "@/lib/auth-store";
 import { PERMISSOES_GRUPOS, PERMISSOES_VISITANTE, TODAS_PERMISSOES, permissoesPadrao, type PermissoesPorCargo } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/hub/permissoes")({
   ssr: false,
@@ -17,6 +18,7 @@ const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toL
 const CARGOS_EDITAVEIS = ["ADMIN", "COMERCIAL"] as const;
 
 function PermissoesPage() {
+  const { t } = useI18n();
   const { session, hydrated } = useAuthSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -52,7 +54,7 @@ function PermissoesPage() {
       await salvarInterface({ configuracao: { permissoes: novo } }, session?.nome || "OWNER");
     },
     onSuccess: async () => {
-      toast.success("Permissões salvas.");
+      toast.success(t("permissions.saved"));
       setDirty(false);
       await qc.invalidateQueries({ queryKey: ["bootstrap"] });
     },
@@ -74,18 +76,17 @@ function PermissoesPage() {
   return (
     <div className="px-6 lg:px-12 py-10 pt-20 lg:pt-14 max-w-5xl mx-auto">
       <Link to="/hub" className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-6">
-        <ChevronLeft size={14} /> Voltar
+        <ChevronLeft size={14} /> {t("common.back")}
       </Link>
 
       <header className="mb-8 flex items-start gap-4">
         <ShieldCheck className="text-[#d4af37] mt-1" size={30} />
         <div>
           <h1 className="manual-comercial-gold text-4xl sm:text-5xl font-display font-black tracking-tight leading-tight pb-2">
-            Permissões
+            {t("permissions.title")}
           </h1>
           <p className="text-sm text-white/50 max-w-xl">
-            Defina o que cada cargo pode fazer. Somente o Owner acessa e edita esta página.
-            As alterações são gravadas na aba <b className="text-[#f9e29f]">Configuracao</b> e registradas em <b className="text-[#f9e29f]">Log_Configuracao</b>.
+            {t("permissions.subtitle")}
           </p>
         </div>
       </header>
@@ -94,11 +95,11 @@ function PermissoesPage() {
         <div className="p-5 border-b border-white/10 bg-black/30 space-y-2">
           <div className="flex items-start gap-2 text-xs text-white/60">
             <Lock size={12} className="mt-0.5 text-[#d4af37]" />
-            <span><b className="text-[#f9e29f]">Owner</b> — acesso total a tudo (não editável).</span>
+            <span>{t("permissions.ownerInfo")}</span>
           </div>
           <div className="flex items-start gap-2 text-xs text-white/60">
             <Lock size={12} className="mt-0.5 text-[#d4af37]" />
-            <span><b className="text-[#f9e29f]">Visitante</b> — somente visualização, sem permissões adicionais.</span>
+            <span>{t("permissions.visitorInfo")}</span>
           </div>
         </div>
 
@@ -109,7 +110,7 @@ function PermissoesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                 {PERMISSOES_GRUPOS.map((g) => (
                   <div key={g.key}>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">{g.titulo}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-2">{t(`permission.group.${g.key}`)}</div>
                     <div className="space-y-1.5">
                       {g.itens.map((item) => {
                         const checked = (state[cargo] || []).includes(item.key);
@@ -124,8 +125,8 @@ function PermissoesPage() {
                               />
                             </span>
                             <span className="flex-1">
-                              <span className="text-sm text-white font-semibold group-hover:text-[#f9e29f]">{item.label}</span>
-                              <span className="block text-[11px] text-white/45 leading-snug">{item.descricao}</span>
+                              <span className="text-sm text-white font-semibold group-hover:text-[#f9e29f]">{t(`permission.${item.key}.label`)}</span>
+                              <span className="block text-[11px] text-white/45 leading-snug">{t(`permission.${item.key}.desc`)}</span>
                             </span>
                           </label>
                         );
@@ -140,14 +141,14 @@ function PermissoesPage() {
 
         <div className="p-4 border-t border-white/10 bg-black/30 flex items-center justify-between">
           <span className="text-xs text-white/40">
-            {dirty ? "Alterações não salvas." : "Sincronizado com a planilha."}
+            {dirty ? t("permissions.unsaved") : t("permissions.synced")}
           </span>
           <button
             onClick={() => saveMut.mutate(state)}
             disabled={!dirty || saveMut.isPending}
             className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Save size={14} /> Salvar permissões
+            <Save size={14} /> {t("permissions.save")}
           </button>
         </div>
       </div>

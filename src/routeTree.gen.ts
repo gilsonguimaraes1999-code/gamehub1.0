@@ -9,23 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HubRouteImport } from './routes/hub'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as HubIndexRouteImport } from './routes/hub.index'
-import { Route as HubPermissoesRouteImport } from './routes/hub.permissoes'
-import { Route as HubLocaisRouteImport } from './routes/hub.locais'
-import { Route as HubContasRouteImport } from './routes/hub.contas'
-import { Route as HubConfiguracoesRouteImport } from './routes/hub.configuracoes'
-import { Route as ApiUploadLogoRouteImport } from './routes/api/upload-logo'
+import { Route as HubRouteImport } from './routes/hub'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiAppsScriptRouteImport } from './routes/api/apps-script'
-import { Route as HubPromocoesNovaRouteImport } from './routes/hub.promocoes.nova'
-import { Route as HubPromocoesIdRouteImport } from './routes/hub.promocoes.$id'
+import { Route as ApiUploadLogoRouteImport } from './routes/api/upload-logo'
+import { Route as HubIndexRouteImport } from './routes/hub.index'
+import { Route as HubConfiguracoesRouteImport } from './routes/hub.configuracoes'
+import { Route as HubContasRouteImport } from './routes/hub.contas'
+import { Route as HubLocaisRouteImport } from './routes/hub.locais'
+import { Route as HubPermissoesRouteImport } from './routes/hub.permissoes'
 import { Route as HubDetalhesIdRouteImport } from './routes/hub.detalhes.$id'
+import { Route as HubPromocoesIdRouteImport } from './routes/hub.promocoes.$id'
+import { Route as HubPromocoesNovaRouteImport } from './routes/hub.promocoes.nova'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HubRoute = HubRouteImport.update({
@@ -33,39 +33,9 @@ const HubRoute = HubRouteImport.update({
   path: '/hub',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HubIndexRoute = HubIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => HubRoute,
-} as any)
-const HubPermissoesRoute = HubPermissoesRouteImport.update({
-  id: '/permissoes',
-  path: '/permissoes',
-  getParentRoute: () => HubRoute,
-} as any)
-const HubLocaisRoute = HubLocaisRouteImport.update({
-  id: '/locais',
-  path: '/locais',
-  getParentRoute: () => HubRoute,
-} as any)
-const HubContasRoute = HubContasRouteImport.update({
-  id: '/contas',
-  path: '/contas',
-  getParentRoute: () => HubRoute,
-} as any)
-const HubConfiguracoesRoute = HubConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => HubRoute,
-} as any)
-const ApiUploadLogoRoute = ApiUploadLogoRouteImport.update({
-  id: '/api/upload-logo',
-  path: '/api/upload-logo',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAppsScriptRoute = ApiAppsScriptRouteImport.update({
@@ -73,9 +43,39 @@ const ApiAppsScriptRoute = ApiAppsScriptRouteImport.update({
   path: '/api/apps-script',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HubPromocoesNovaRoute = HubPromocoesNovaRouteImport.update({
-  id: '/promocoes/nova',
-  path: '/promocoes/nova',
+const ApiUploadLogoRoute = ApiUploadLogoRouteImport.update({
+  id: '/api/upload-logo',
+  path: '/api/upload-logo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HubIndexRoute = HubIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HubRoute,
+} as any)
+const HubConfiguracoesRoute = HubConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => HubRoute,
+} as any)
+const HubContasRoute = HubContasRouteImport.update({
+  id: '/contas',
+  path: '/contas',
+  getParentRoute: () => HubRoute,
+} as any)
+const HubLocaisRoute = HubLocaisRouteImport.update({
+  id: '/locais',
+  path: '/locais',
+  getParentRoute: () => HubRoute,
+} as any)
+const HubPermissoesRoute = HubPermissoesRouteImport.update({
+  id: '/permissoes',
+  path: '/permissoes',
+  getParentRoute: () => HubRoute,
+} as any)
+const HubDetalhesIdRoute = HubDetalhesIdRouteImport.update({
+  id: '/detalhes/$id',
+  path: '/detalhes/$id',
   getParentRoute: () => HubRoute,
 } as any)
 const HubPromocoesIdRoute = HubPromocoesIdRouteImport.update({
@@ -83,9 +83,9 @@ const HubPromocoesIdRoute = HubPromocoesIdRouteImport.update({
   path: '/promocoes/$id',
   getParentRoute: () => HubRoute,
 } as any)
-const HubDetalhesIdRoute = HubDetalhesIdRouteImport.update({
-  id: '/detalhes/$id',
-  path: '/detalhes/$id',
+const HubPromocoesNovaRoute = HubPromocoesNovaRouteImport.update({
+  id: '/promocoes/nova',
+  path: '/promocoes/nova',
   getParentRoute: () => HubRoute,
 } as any)
 
@@ -191,11 +191,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hub': {
@@ -205,53 +205,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HubRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hub/': {
-      id: '/hub/'
-      path: '/'
-      fullPath: '/hub/'
-      preLoaderRoute: typeof HubIndexRouteImport
-      parentRoute: typeof HubRoute
-    }
-    '/hub/permissoes': {
-      id: '/hub/permissoes'
-      path: '/permissoes'
-      fullPath: '/hub/permissoes'
-      preLoaderRoute: typeof HubPermissoesRouteImport
-      parentRoute: typeof HubRoute
-    }
-    '/hub/locais': {
-      id: '/hub/locais'
-      path: '/locais'
-      fullPath: '/hub/locais'
-      preLoaderRoute: typeof HubLocaisRouteImport
-      parentRoute: typeof HubRoute
-    }
-    '/hub/contas': {
-      id: '/hub/contas'
-      path: '/contas'
-      fullPath: '/hub/contas'
-      preLoaderRoute: typeof HubContasRouteImport
-      parentRoute: typeof HubRoute
-    }
-    '/hub/configuracoes': {
-      id: '/hub/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/hub/configuracoes'
-      preLoaderRoute: typeof HubConfiguracoesRouteImport
-      parentRoute: typeof HubRoute
-    }
-    '/api/upload-logo': {
-      id: '/api/upload-logo'
-      path: '/api/upload-logo'
-      fullPath: '/api/upload-logo'
-      preLoaderRoute: typeof ApiUploadLogoRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/apps-script': {
@@ -261,11 +219,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAppsScriptRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/hub/promocoes/nova': {
-      id: '/hub/promocoes/nova'
-      path: '/promocoes/nova'
-      fullPath: '/hub/promocoes/nova'
-      preLoaderRoute: typeof HubPromocoesNovaRouteImport
+    '/api/upload-logo': {
+      id: '/api/upload-logo'
+      path: '/api/upload-logo'
+      fullPath: '/api/upload-logo'
+      preLoaderRoute: typeof ApiUploadLogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hub/': {
+      id: '/hub/'
+      path: '/'
+      fullPath: '/hub/'
+      preLoaderRoute: typeof HubIndexRouteImport
+      parentRoute: typeof HubRoute
+    }
+    '/hub/configuracoes': {
+      id: '/hub/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/hub/configuracoes'
+      preLoaderRoute: typeof HubConfiguracoesRouteImport
+      parentRoute: typeof HubRoute
+    }
+    '/hub/contas': {
+      id: '/hub/contas'
+      path: '/contas'
+      fullPath: '/hub/contas'
+      preLoaderRoute: typeof HubContasRouteImport
+      parentRoute: typeof HubRoute
+    }
+    '/hub/locais': {
+      id: '/hub/locais'
+      path: '/locais'
+      fullPath: '/hub/locais'
+      preLoaderRoute: typeof HubLocaisRouteImport
+      parentRoute: typeof HubRoute
+    }
+    '/hub/permissoes': {
+      id: '/hub/permissoes'
+      path: '/permissoes'
+      fullPath: '/hub/permissoes'
+      preLoaderRoute: typeof HubPermissoesRouteImport
+      parentRoute: typeof HubRoute
+    }
+    '/hub/detalhes/$id': {
+      id: '/hub/detalhes/$id'
+      path: '/detalhes/$id'
+      fullPath: '/hub/detalhes/$id'
+      preLoaderRoute: typeof HubDetalhesIdRouteImport
       parentRoute: typeof HubRoute
     }
     '/hub/promocoes/$id': {
@@ -275,11 +275,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HubPromocoesIdRouteImport
       parentRoute: typeof HubRoute
     }
-    '/hub/detalhes/$id': {
-      id: '/hub/detalhes/$id'
-      path: '/detalhes/$id'
-      fullPath: '/hub/detalhes/$id'
-      preLoaderRoute: typeof HubDetalhesIdRouteImport
+    '/hub/promocoes/nova': {
+      id: '/hub/promocoes/nova'
+      path: '/promocoes/nova'
+      fullPath: '/hub/promocoes/nova'
+      preLoaderRoute: typeof HubPromocoesNovaRouteImport
       parentRoute: typeof HubRoute
     }
   }
@@ -319,3 +319,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

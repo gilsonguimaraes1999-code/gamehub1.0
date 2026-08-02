@@ -6,6 +6,7 @@ import { ChevronLeft, Plus, Trash2, Pencil, Save, X, Eye } from "lucide-react";
 import { atualizarConta, criarConta, deletarConta, fetchBootstrap, type Conta } from "@/lib/sghub-api";
 import { getOriginalSession, startImpersonation, useAuthSession } from "@/lib/auth-store";
 import { hasPermission, normalizeCargo, permissoesPadrao, type PermissoesPorCargo } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
 
 
 export const Route = createFileRoute("/hub/contas")({
@@ -28,6 +29,7 @@ function LabeledField({ label, children }: { label: string; children: React.Reac
 }
 
 function ContasPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { session, impersonating } = useAuthSession();
@@ -54,17 +56,17 @@ function ContasPage() {
 
   const createMut = useMutation({
     mutationFn: criarConta,
-    onSuccess: async () => { toast.success("Conta criada."); await invalidate(); },
+    onSuccess: async () => { toast.success(t("accounts.created")); await invalidate(); },
     onError: (e) => toast.error((e as Error).message),
   });
   const updateMut = useMutation({
     mutationFn: (v: { id: string; input: Partial<Conta> & { senha?: string } }) => atualizarConta(v.id, v.input),
-    onSuccess: async () => { toast.success("Conta atualizada."); await invalidate(); },
+    onSuccess: async () => { toast.success(t("accounts.updated")); await invalidate(); },
     onError: (e) => toast.error((e as Error).message),
   });
   const deleteMut = useMutation({
     mutationFn: deletarConta,
-    onSuccess: async () => { toast.success("Conta removida."); await invalidate(); },
+    onSuccess: async () => { toast.success(t("accounts.removed")); await invalidate(); },
     onError: (e) => toast.error((e as Error).message),
   });
 
@@ -72,7 +74,7 @@ function ContasPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleCreate = () => {
-    if (!novo.usuario.trim() || !novo.senha.trim()) return toast.error("Usuário e senha obrigatórios.");
+    if (!novo.usuario.trim() || !novo.senha.trim()) return toast.error(t("accounts.required"));
     createMut.mutate({ ...novo, status: "ativo", permissoes: permissoesPorCargo[normalizeCargo(novo.cargo)] || [] }, {
       onSuccess: () => setNovo({ usuario: "", senha: "", nome: "", cargo: "COMERCIAL" }),
     });
@@ -81,47 +83,47 @@ function ContasPage() {
   return (
     <div className="px-6 lg:px-12 py-10 pt-20 lg:pt-14 max-w-5xl mx-auto">
       <Link to="/hub" className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-6">
-        <ChevronLeft size={14} /> Voltar
+        <ChevronLeft size={14} /> {t("common.back")}
       </Link>
       <header className="mb-10">
         <h1 className="manual-comercial-gold text-4xl sm:text-5xl font-display font-black tracking-tight leading-tight pb-2">
-          Contas de Acesso
+          {t("accounts.title")}
         </h1>
       </header>
 
       {!canView && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center text-red-200">
-          Você não tem permissão para visualizar contas.
+          {t("accounts.noPermission")}
         </div>
       )}
 
       {/* Nova conta */}
       {canView && canCreate && <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 mb-8">
-        <h3 className="font-black uppercase tracking-widest text-xs text-[#d4af37] mb-4">+ Nova conta</h3>
+        <h3 className="font-black uppercase tracking-widest text-xs text-[#d4af37] mb-4">{t("accounts.new")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <LabeledField label="Usuário">
-            <input placeholder="ex.: joao" value={novo.usuario} onChange={(e) => setNovo({ ...novo, usuario: e.target.value })} className={fieldCls} />
+          <LabeledField label={t("common.user")}>
+            <input placeholder={t("accounts.userPlaceholder")} value={novo.usuario} onChange={(e) => setNovo({ ...novo, usuario: e.target.value })} className={fieldCls} />
           </LabeledField>
-          <LabeledField label="Senha">
+          <LabeledField label={t("common.password")}>
             <input type="password" placeholder="••••••" value={novo.senha} onChange={(e) => setNovo({ ...novo, senha: e.target.value })} className={fieldCls} />
           </LabeledField>
-          <LabeledField label="Nome">
-            <input placeholder="Nome completo" value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} className={fieldCls} />
+          <LabeledField label={t("common.name")}>
+            <input placeholder={t("accounts.fullNamePlaceholder")} value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} className={fieldCls} />
           </LabeledField>
-          <LabeledField label="Cargo">
+          <LabeledField label={t("common.role")}>
             <select value={novo.cargo} onChange={(e) => setNovo({ ...novo, cargo: e.target.value })} className={fieldCls}>
               {CARGOS.map((c) => <option key={c} value={c} className="bg-black text-white">{titleCase(c)}</option>)}
             </select>
           </LabeledField>
           <div className="flex items-end">
             <button onClick={handleCreate} disabled={createMut.isPending} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black font-black uppercase tracking-widest text-xs disabled:opacity-50">
-              <Plus size={14} /> Criar
+              <Plus size={14} /> {t("common.create")}
             </button>
           </div>
         </div>
       </section>}
 
-      {canView && isLoading && <p className="text-white/40 text-sm uppercase tracking-widest">Carregando...</p>}
+      {canView && isLoading && <p className="text-white/40 text-sm uppercase tracking-widest">{t("common.loading")}</p>}
 
       {canView && <div className="space-y-3">
         {contas.map((c) => (
@@ -142,7 +144,7 @@ function ContasPage() {
                 tipo: c.cargo,
                 permissoes,
               });
-              toast.success(`Visualizando como ${c.nome || c.usuario}.`);
+              toast.success(t("accounts.viewingAs", { name: c.nome || c.usuario }));
               navigate({ to: "/hub", replace: true });
             }}
             onSave={async (input) => {
@@ -150,13 +152,14 @@ function ContasPage() {
               await updateMut.mutateAsync({ id: c.id, input: { ...input, permissoes: permissoesPorCargo[cargo] || [] } });
               setEditingId(null);
             }}
-            onDelete={() => { if (confirm(`Excluir a conta "${c.usuario}"?`)) deleteMut.mutate(c.id); }}
+            onDelete={() => { if (confirm(t("accounts.deleteConfirm", { user: c.usuario }))) deleteMut.mutate(c.id); }}
             saving={updateMut.isPending}
+            t={t}
           />
         ))}
 
         {!isLoading && contas.length === 0 && (
-          <p className="text-center text-white/40 py-10">Nenhuma conta cadastrada.</p>
+          <p className="text-center text-white/40 py-10">{t("accounts.empty")}</p>
         )}
       </div>}
     </div>
@@ -164,7 +167,7 @@ function ContasPage() {
 }
 
 
-function ContaRow({ conta, editing, canEdit, canDelete, canImpersonate, onImpersonate, onToggleEdit, onSave, onDelete, saving }: { conta: Conta; editing: boolean; canEdit: boolean; canDelete: boolean; canImpersonate: boolean; onImpersonate: () => void; onToggleEdit: () => void; onSave: (i: Partial<Conta> & { senha?: string }) => Promise<unknown>; onDelete: () => void; saving: boolean }) {
+function ContaRow({ conta, editing, canEdit, canDelete, canImpersonate, onImpersonate, onToggleEdit, onSave, onDelete, saving, t }: { conta: Conta; editing: boolean; canEdit: boolean; canDelete: boolean; canImpersonate: boolean; onImpersonate: () => void; onToggleEdit: () => void; onSave: (i: Partial<Conta> & { senha?: string }) => Promise<unknown>; onDelete: () => void; saving: boolean; t: (key: string, vars?: Record<string, string | number>) => string }) {
   const [form, setForm] = useState({
     usuario: conta.usuario || "",
     nome: conta.nome || "",
@@ -212,8 +215,8 @@ function ContaRow({ conta, editing, canEdit, canDelete, canImpersonate, onImpers
           <button
             onClick={onImpersonate}
             className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-[#d4af37]"
-            aria-label="Visualizar como esta conta"
-            title="Visualizar como esta conta"
+            aria-label={t("accounts.viewAs")}
+            title={t("accounts.viewAs")}
           >
             <Eye size={16} />
           </button>
@@ -222,14 +225,14 @@ function ContaRow({ conta, editing, canEdit, canDelete, canImpersonate, onImpers
           <button
             onClick={() => { if (!editing) resetForm(); onToggleEdit(); }}
             className={`p-2 rounded-lg hover:bg-white/5 ${editing ? "text-[#d4af37] bg-white/5" : "text-white/60 hover:text-[#d4af37]"}`}
-            aria-label="Editar"
+            aria-label={t("common.edit")}
           >
             <Pencil size={16} />
           </button>
         )}
 
         {canDelete && (
-          <button onClick={onDelete} className="p-2 rounded-lg hover:bg-red-500/10 text-white/60 hover:text-red-300" aria-label="Excluir">
+          <button onClick={onDelete} className="p-2 rounded-lg hover:bg-red-500/10 text-white/60 hover:text-red-300" aria-label={t("common.delete")}>
             <Trash2 size={16} />
           </button>
         )}
@@ -238,35 +241,35 @@ function ContaRow({ conta, editing, canEdit, canDelete, canImpersonate, onImpers
       {editing && (
         <div className="border-t border-white/10 p-4 space-y-3 bg-black/30">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <LabeledField label="Usuário">
-              <input value={form.usuario} onChange={(e) => setForm({ ...form, usuario: e.target.value })} placeholder="ex.: joao" className={fieldCls} />
+            <LabeledField label={t("common.user")}>
+              <input value={form.usuario} onChange={(e) => setForm({ ...form, usuario: e.target.value })} placeholder={t("accounts.userPlaceholder")} className={fieldCls} />
             </LabeledField>
-            <LabeledField label="Nome">
-              <input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Nome completo" className={fieldCls} />
+            <LabeledField label={t("common.name")}>
+              <input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder={t("accounts.fullNamePlaceholder")} className={fieldCls} />
             </LabeledField>
-            <LabeledField label="Cargo">
+            <LabeledField label={t("common.role")}>
               <select value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} className={fieldCls}>
                 {CARGOS.map((c) => <option key={c} value={c} className="bg-black text-white">{titleCase(c)}</option>)}
               </select>
             </LabeledField>
-            <LabeledField label="Status">
+            <LabeledField label={t("common.status")}>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={fieldCls}>
-                <option value="ativo" className="bg-black text-white">Ativo</option>
-                <option value="inativo" className="bg-black text-white">Inativo</option>
+                <option value="ativo" className="bg-black text-white">{t("common.active")}</option>
+                <option value="inativo" className="bg-black text-white">{t("common.inactive")}</option>
               </select>
             </LabeledField>
             <div className="md:col-span-2">
-              <LabeledField label="Senha">
-                <input type="password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} placeholder="Nova senha (deixe em branco para manter)" className={fieldCls} />
+              <LabeledField label={t("common.password")}>
+                <input type="password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} placeholder={t("accounts.newPasswordPlaceholder")} className={fieldCls} />
               </LabeledField>
             </div>
           </div>
           <div className="flex gap-2 justify-end">
             <button onClick={onToggleEdit} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 text-white/70 hover:bg-white/5 text-xs font-black uppercase tracking-widest">
-              <X size={14} /> Cancelar
+              <X size={14} /> {t("common.cancel")}
             </button>
             <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black font-black uppercase tracking-widest text-xs disabled:opacity-50">
-              <Save size={14} /> Salvar
+              <Save size={14} /> {t("common.save")}
             </button>
           </div>
         </div>

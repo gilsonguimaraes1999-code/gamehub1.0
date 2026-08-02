@@ -1,12 +1,13 @@
 import { ImageIcon } from "lucide-react";
 import type { Promocao } from "@/lib/sghub-api";
+import { useI18n } from "@/lib/i18n";
 
-const TIPO_LABEL: Record<string, string> = {
-  vip_mensal: "VIP MENSAL",
-  oferta_flash: "OFERTA FLASH",
-  link_exclusivo: "LINK EXCLUSIVO",
-  battlepass: "BATTLEPASS",
-  oferta_cidade: "OFERTA DA CIDADE",
+const TIPO_LABEL_KEYS: Record<string, string> = {
+  vip_mensal: "promotion.type.vip_mensal",
+  oferta_flash: "promotion.type.oferta_flash",
+  link_exclusivo: "promotion.type.link_exclusivo",
+  battlepass: "promotion.type.battlepass",
+  oferta_cidade: "promotion.type.oferta_cidade",
 };
 
 function toEmbedUrl(url: string): string | null {
@@ -62,6 +63,7 @@ function Block({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
+  const { t } = useI18n();
   const tipo = p.tipo || "vip_mensal";
   const image = p.imagem || p.miniatura;
   const isActive = (p.status || "ativo") === "ativo";
@@ -71,19 +73,19 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
     const cityImg = (p.links_por_cidade || []).find((l) => l && l.imagem)?.imagem;
     const mediaSrc = cityImg || image;
     const video = p.video;
-    const buttonText = p.texto_botao || "COMPRAR";
+    const buttonText = p.texto_botao || t("modalPreview.buy");
 
     return (
       <aside className="w-full">
         <div className="flex items-center gap-2 mb-4">
           <ImageIcon size={18} className="text-[#e5c12f]" />
-          <h3 className="text-lg font-bold text-white">Modal Preview</h3>
+          <h3 className="text-lg font-bold text-white">{t("modalPreview.title")}</h3>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-[#0a0f1e] p-3 shadow-2xl">
           <div className="flex items-center justify-between mb-3 px-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-              {TIPO_LABEL[tipo]}
+              {TIPO_LABEL_KEYS[tipo] ? t(TIPO_LABEL_KEYS[tipo]) : tipo}
             </span>
             <span
               className={`w-2 h-2 rounded-full ${
@@ -117,7 +119,7 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
                 }
                 return (
                   <div className="text-white/20 text-[10px] uppercase tracking-widest">
-                    Sem vídeo / imagem
+                    {t("modalPreview.noVideoImage")}
                   </div>
                 );
               })()}
@@ -150,13 +152,13 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
                     </div>
                     <div className="flex-1 min-w-0 text-center">
                       <div className="text-[9px] font-black uppercase tracking-widest text-white/90 leading-tight">
-                        Coupon
+                        {t("common.coupon")}
                       </div>
                       <div className="text-[12px] font-black text-white leading-tight truncate">
                         {p.cupom}
                       </div>
                       <div className="mt-1 inline-block rounded-full bg-white/30 px-2 py-[2px] text-[9px] font-bold text-white">
-                        Copy Coupon
+                        {t("modalPreview.copyCoupon")}
                       </div>
                     </div>
                   </div>
@@ -166,7 +168,7 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
               <div className="px-2 pb-2 text-center">
                 {p.preco_total && p.preco_desconto && (
                   <div className="text-[9px] text-white/60 mb-0.5">
-                    Save ${Math.max(0, Number(String(p.preco_total).replace(/\D/g, "")) - Number(String(p.preco_desconto).replace(/\D/g, "")))}
+                    {t("modalPreview.save", { amount: Math.max(0, Number(String(p.preco_total).replace(/\D/g, "")) - Number(String(p.preco_desconto).replace(/\D/g, ""))) })}
                   </div>
                 )}
                 <div className="flex items-baseline justify-center gap-1.5 mb-2">
@@ -199,14 +201,14 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
     <aside className="w-full">
       <div className="flex items-center gap-2 mb-4">
         <ImageIcon size={18} className="text-[#e5c12f]" />
-        <h3 className="text-lg font-bold text-white">Modal Preview</h3>
+        <h3 className="text-lg font-bold text-white">{t("modalPreview.title")}</h3>
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-[#141414] to-[#0a0a0a] p-4 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 px-1">
           <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-            {TIPO_LABEL[tipo] || tipo}
+            {TIPO_LABEL_KEYS[tipo] ? t(TIPO_LABEL_KEYS[tipo]) : tipo}
           </span>
           <span
             className={`w-2 h-2 rounded-full ${
@@ -220,7 +222,7 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
           {image ? (
             <img src={image} alt="preview" className="w-full h-full object-contain" />
           ) : (
-            <div className="text-white/20 text-xs uppercase tracking-widest">Sem imagem</div>
+            <div className="text-white/20 text-xs uppercase tracking-widest">{t("modalPreview.noImage")}</div>
           )}
         </div>
 
@@ -228,22 +230,22 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
         <div className="space-y-3">
           {tipo === "vip_mensal" && (
             <>
-              <Block label="Nome">{p.nome || <em className="text-white/30">Nome do VIP</em>}</Block>
-              <Block label="Cupom">
+              <Block label={t("common.name")}>{p.nome || <em className="text-white/30">{t("modalPreview.vipNamePlaceholder")}</em>}</Block>
+              <Block label={t("common.coupon")}>
                 <span className="text-[#e5c12f] font-bold">
-                  {p.cupom || "CUPOM: (NOME DA CIDADE)"}
+                  {p.cupom || t("modalPreview.couponPlaceholder")}
                 </span>
               </Block>
-              {p.descricao && <Block label="Descrição">{renderHtml(p.descricao)}</Block>}
-              {p.validade && <Block label="Validade">{p.validade}</Block>}
+              {p.descricao && <Block label={t("common.description")}>{renderHtml(p.descricao)}</Block>}
+              {p.validade && <Block label={t("common.validity")}>{p.validade}</Block>}
             </>
           )}
 
           {tipo === "oferta_flash" && (
             <>
-              <Block label="Título">{p.titulo || <em className="text-white/30">Título</em>}</Block>
-              {p.subtitulo && <Block label="Subtítulo">{p.subtitulo}</Block>}
-              {p.produto && <Block label="Produto">{p.produto}</Block>}
+              <Block label={t("common.title")}>{p.titulo || <em className="text-white/30">{t("modalPreview.titlePlaceholder")}</em>}</Block>
+              {p.subtitulo && <Block label={t("common.subtitle")}>{p.subtitulo}</Block>}
+              {p.produto && <Block label={t("common.product")}>{p.produto}</Block>}
               <div className="flex items-baseline gap-3 px-1">
                 {p.preco_antigo && (
                   <span className="text-white/40 line-through text-sm">{p.preco_antigo}</span>
@@ -252,20 +254,20 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
                   <span className="text-[#e5c12f] font-black text-2xl">{p.preco}</span>
                 )}
               </div>
-              {p.duracao && <Block label="Duração">{p.duracao}</Block>}
+              {p.duracao && <Block label={t("common.duration")}>{p.duracao}</Block>}
             </>
           )}
 
           {tipo === "battlepass" && (
             <>
-              <Block label="Passe">{p.nome || <em className="text-white/30">Nome do passe</em>}</Block>
-              {p.descricao && <Block label="Descrição">{renderHtml(p.descricao)}</Block>}
+              <Block label="BattlePass">{p.nome || <em className="text-white/30">{t("modalPreview.passNamePlaceholder")}</em>}</Block>
+              {p.descricao && <Block label={t("common.description")}>{renderHtml(p.descricao)}</Block>}
             </>
           )}
 
           {tipo === "link_exclusivo" && (
             <div className="text-white/60 text-xs text-center py-2">
-              Link exclusivo — clique para acessar
+              {t("modalPreview.exclusiveLink")}
             </div>
           )}
         </div>
@@ -276,17 +278,16 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
             type="button"
             className="py-3 rounded-xl bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-widest text-white/80"
           >
-            Cancelar
+            {t("common.cancel")}
           </button>
           <button
             type="button"
             className="py-3 rounded-xl bg-[#e5c12f] text-black text-[11px] font-black uppercase tracking-widest"
           >
-            Confirmar
+            {t("common.confirm")}
           </button>
         </div>
       </div>
     </aside>
   );
 }
-

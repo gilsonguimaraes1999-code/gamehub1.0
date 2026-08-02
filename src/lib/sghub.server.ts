@@ -1,3 +1,5 @@
+import { translate as t } from "@/lib/i18n";
+
 const APPS_SCRIPT_URL =
   process.env.APPS_SCRIPT_URL ||
   process.env.VITE_APPS_SCRIPT_URL ||
@@ -14,7 +16,7 @@ interface AppsScriptResult {
   error?: string;
 }
 
-const HTML_RESPONSE_ERROR = "Apps Script retornou HTML (ação não gravou).";
+const HTML_RESPONSE_ERROR = t("server.htmlError");
 
 function toAppsScriptParamValue(value: unknown): string {
   if (value === undefined || value === null) return "";
@@ -39,9 +41,9 @@ async function fetchAppsScript(url: string, options?: RequestInit): Promise<Apps
     if (contentType.includes("application/json") || /^[\s\n\r]*[\{\[]/.test(text)) {
       try {
         const payload = JSON.parse(text);
-        return { ok: response.ok, status: response.status, payload, raw: text, error: response.ok ? undefined : `Apps Script retornou HTTP ${response.status}.` };
+        return { ok: response.ok, status: response.status, payload, raw: text, error: response.ok ? undefined : t("server.httpError", "pt-BR", { status: response.status }) };
       } catch {
-        return { ok: false, status: response.status, raw: text, error: "Resposta JSON inválida do Apps Script." };
+        return { ok: false, status: response.status, raw: text, error: t("server.invalidJson") };
       }
     }
 
@@ -53,7 +55,7 @@ async function fetchAppsScript(url: string, options?: RequestInit): Promise<Apps
     return {
       ok: false,
       status: 0,
-      error: error instanceof Error ? error.message : "Falha de rede ao chamar Apps Script.",
+      error: error instanceof Error ? error.message : t("server.networkFail"),
     };
   }
 }
@@ -67,7 +69,7 @@ export async function callAppsScriptGET(query?: Record<string, string>): Promise
   });
   if (result.ok) return result.payload;
   throw new Error(
-    `${result.error} Confira se o Web App foi implantado como: Executar como Você / Acesso: Qualquer pessoa.`
+    `${result.error} ${t("server.deployHint")}`
   );
 }
 
@@ -98,19 +100,19 @@ export async function callAppsScriptPOST(body: Record<string, unknown>): Promise
     result = {
       ok: false,
       status: 0,
-      error: "Payload grande demais para gravar via GET no Apps Script.",
+      error: t("server.payloadTooLarge"),
     };
   }
 
   throw new Error(
-    `${result.error} Confira se o Web App foi implantado corretamente e se APPS_SCRIPT_URL está correta.`
+    `${result.error} ${t("server.correctDeployHint")}`
   );
 }
 
 export async function uploadImageToImgBB(image: string): Promise<{ url: string; data: unknown }> {
   const raw = String(image || "").trim();
   const base64 = (raw.includes(",") ? raw.split(",").pop() || "" : raw).replace(/\s+/g, "");
-  if (!base64) throw new Error("Imagem vazia para upload.");
+  if (!base64) throw new Error(t("server.emptyImage"));
 
   const form = new FormData();
   form.append("image", base64);
@@ -124,8 +126,8 @@ export async function uploadImageToImgBB(image: string): Promise<{ url: string; 
   try { data = JSON.parse(text); } catch { /* keep raw */ }
   if (!response.ok || !data.success) {
     const msg = typeof data.error === "string" ? data.error : data.error?.message;
-    throw new Error(msg || `Falha no upload ImgBB (HTTP ${response.status}): ${text.slice(0, 200)}`);
+    throw new Error(msg || t("server.imgbbFail", "pt-BR", { status: response.status, message: text.slice(0, 200) }));
   }
-  if (!data.data?.url) throw new Error("URL da imagem não retornada.");
+  if (!data.data?.url) throw new Error(t("server.noImageUrl"));
   return { url: data.data.url, data };
 }

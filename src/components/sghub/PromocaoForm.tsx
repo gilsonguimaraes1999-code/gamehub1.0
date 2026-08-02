@@ -4,13 +4,14 @@ import { Trash2, Upload, Info, Layers, LinkIcon } from "lucide-react";
 import type { Local, Promocao, LinkPorCidade } from "@/lib/sghub-api";
 import { uploadImage } from "@/lib/sghub-api";
 import ModalPreview from "@/components/sghub/ModalPreview";
+import { useI18n } from "@/lib/i18n";
 
 const TIPOS = [
-  { value: "vip_mensal", label: "VIP Mensal" },
-  { value: "oferta_flash", label: "Oferta Flash" },
-  { value: "link_exclusivo", label: "Link Exclusivo" },
-  { value: "battlepass", label: "BattlePass Informação" },
-  { value: "oferta_cidade", label: "Oferta da Cidade" },
+  { value: "vip_mensal", labelKey: "promotion.type.vip_mensal" },
+  { value: "oferta_flash", labelKey: "promotion.type.oferta_flash" },
+  { value: "link_exclusivo", labelKey: "promotion.type.link_exclusivo" },
+  { value: "battlepass", labelKey: "promotion.type.battlepassInfo" },
+  { value: "oferta_cidade", labelKey: "promotion.type.oferta_cidade" },
 ];
 
 interface Props {
@@ -34,6 +35,7 @@ function Field({
   placeholder,
   error,
   trailing,
+  defaultPlaceholder,
 }: {
   label: string;
   value?: string;
@@ -41,6 +43,7 @@ function Field({
   placeholder?: string;
   error?: boolean;
   trailing?: React.ReactNode;
+  defaultPlaceholder?: (label: string) => string;
 }) {
   return (
     <div className="space-y-2">
@@ -49,7 +52,7 @@ function Field({
         <input
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder ?? `Digite ${label.toLowerCase()}...`}
+          placeholder={placeholder ?? (defaultPlaceholder ? defaultPlaceholder(label.toLowerCase()) : "")}
           className={`${inputCls} ${trailing ? "pr-12" : ""} ${error ? "border-red-500 focus:ring-red-500" : ""}`}
         />
         {trailing && (
@@ -63,13 +66,17 @@ function Field({
 function ImageUploadButton({
   uploading,
   onFile,
+  uploadTitle,
+  uploadingTitle,
 }: {
   uploading: boolean;
   onFile: (f: File) => void;
+  uploadTitle: string;
+  uploadingTitle: string;
 }) {
   return (
     <label
-      title={uploading ? "Enviando..." : "Enviar imagem"}
+      title={uploading ? uploadingTitle : uploadTitle}
       className="cursor-pointer inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-[#e5c12f] hover:border-[#e5c12f]/50 transition-all"
     >
       <Upload size={14} className={uploading ? "animate-pulse" : ""} />
@@ -90,8 +97,10 @@ export default function PromocaoForm({
   submitting,
   onSubmit,
   onCancel,
-  submitLabel = "Salvar Promoção",
+  submitLabel,
 }: Props) {
+  const { t } = useI18n();
+  const finalSubmitLabel = submitLabel || t("promotion.form.defaultSubmit");
   const [state, setState] = useState<Partial<Promocao>>({
     tipo: initial?.tipo || "vip_mensal",
     status: initial?.status || "ativo",
@@ -153,7 +162,7 @@ export default function PromocaoForm({
   };
 
   const handleFile = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) return toast.error("Imagem maior que 5MB.");
+    if (file.size > 5 * 1024 * 1024) return toast.error(t("promotion.form.bigImage"));
     setUploading(true);
     try {
       const dataUrl = await new Promise<string>((res, rej) => {
@@ -164,16 +173,16 @@ export default function PromocaoForm({
       });
       const url = await uploadImage(dataUrl);
       update({ imagem: url });
-      toast.success("Imagem enviada.");
+      toast.success(t("promotion.form.imageSent"));
     } catch (e) {
-      toast.error((e as Error).message || "Falha no upload.");
+      toast.error((e as Error).message || t("promotion.form.uploadFail"));
     } finally {
       setUploading(false);
     }
   };
 
   const handleCityFile = async (countryId: string, cityId: string, file: File) => {
-    if (file.size > 5 * 1024 * 1024) return toast.error("Imagem maior que 5MB.");
+    if (file.size > 5 * 1024 * 1024) return toast.error(t("promotion.form.bigImage"));
     const key = `${countryId}:${cityId}`;
     setUploadingCity(key);
     try {
@@ -185,9 +194,9 @@ export default function PromocaoForm({
       });
       const url = await uploadImage(dataUrl);
       upsertLink(countryId, cityId, { imagem: url });
-      toast.success("Imagem enviada.");
+      toast.success(t("promotion.form.imageSent"));
     } catch (e) {
-      toast.error((e as Error).message || "Falha no upload.");
+      toast.error((e as Error).message || t("promotion.form.uploadFail"));
     } finally {
       setUploadingCity(null);
     }
@@ -204,7 +213,7 @@ export default function PromocaoForm({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!validate()) return toast.error("Preencha os campos obrigatórios.");
+    if (!validate()) return toast.error(t("promotion.form.required"));
     await onSubmit(state);
   };
 
@@ -220,7 +229,7 @@ export default function PromocaoForm({
             onClick={onCancel}
             className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm font-semibold text-white hover:bg-white/10 transition-colors"
           >
-            Cancelar
+            {t("common.cancel")}
           </button>
         )}
         <button
@@ -228,7 +237,7 @@ export default function PromocaoForm({
           disabled={submitting || uploading}
           className="px-6 py-2 bg-[#e5c12f] text-black rounded-xl text-sm font-bold hover:opacity-90 transition-all disabled:opacity-50"
         >
-          {submitting ? "Salvando..." : submitLabel}
+          {submitting ? t("common.saving") : finalSubmitLabel}
         </button>
       </div>
 
@@ -237,37 +246,38 @@ export default function PromocaoForm({
         {/* Informações Gerais */}
         <section className="space-y-6">
           <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
-            <Info size={18} className="text-[#e5c12f]" /> Informações Gerais
+            <Info size={18} className="text-[#e5c12f]" /> {t("promotion.form.general")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Field
-              label="Nome Interno (Painel)"
+              label={t("promotion.form.internalName")}
               value={state.nome_interno}
               onChange={(v) => update({ nome_interno: v })}
-              placeholder="Ex: Oferta Natal 2026"
+              placeholder={t("promotion.form.internalNamePlaceholder")}
               error={errors.nome_interno}
+              defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })}
             />
             <div className="space-y-2">
-              <label className={labelCls}>Tipo de Promoção</label>
+              <label className={labelCls}>{t("promotion.form.type")}</label>
               <select
                 value={state.tipo}
                 onChange={(e) => update({ tipo: e.target.value })}
                 className={`${inputCls} appearance-none`}
               >
                 {TIPOS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-2">
-              <label className={labelCls}>Status</label>
+              <label className={labelCls}>{t("common.status")}</label>
               <select
                 value={state.status}
                 onChange={(e) => update({ status: e.target.value })}
                 className={`${inputCls} appearance-none`}
               >
-                <option value="ativo">Ativo</option>
-                <option value="inativo">Inativo</option>
+                <option value="ativo">{t("common.active")}</option>
+                <option value="inativo">{t("common.inactive")}</option>
               </select>
             </div>
           </div>
@@ -276,26 +286,26 @@ export default function PromocaoForm({
         {/* Conteúdo do Modal */}
         <section className="space-y-6">
           <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
-            <Layers size={18} className="text-[#e5c12f]" /> Conteúdo do Modal
+            <Layers size={18} className="text-[#e5c12f]" /> {t("promotion.form.modalContent")}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {state.tipo === "vip_mensal" && (
               <>
-                <Field label="Nome do VIP Mensal" value={state.nome} onChange={(v) => update({ nome: v })} error={errors.nome} />
-                <Field label="Cupom do VIP Mensal" value={state.cupom} onChange={(v) => update({ cupom: v })} />
+                <Field label={t("promotion.form.vipName")} value={state.nome} onChange={(v) => update({ nome: v })} error={errors.nome} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.vipCoupon")} value={state.cupom} onChange={(v) => update({ cupom: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 <div className="md:col-span-2 space-y-2">
-                  <label className={labelCls}>Descrição do VIP Mensal</label>
+                  <label className={labelCls}>{t("promotion.form.vipDescription")}</label>
                   <textarea
                     value={state.descricao ?? ""}
                     onChange={(e) => update({ descricao: e.target.value })}
-                    placeholder="Detalhes da promoção..."
+                    placeholder={t("promotion.form.detailsPlaceholder")}
                     className={`${inputCls} h-24 resize-none`}
                   />
                 </div>
-                <Field label="Validade do VIP Mensal" value={state.validade} onChange={(v) => update({ validade: v })} />
-                <Field label="Link do VIP Mensal" value={state.link ?? ""} onChange={(v) => update({ link: v })} />
+                <Field label={t("promotion.form.vipValidity")} value={state.validade} onChange={(v) => update({ validade: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.vipLink")} value={state.link ?? ""} onChange={(v) => update({ link: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 <div className="md:col-span-2">
-                  <Field label="Imagem do VIP Mensal" value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} />} />
+                  <Field label={t("promotion.form.vipImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 </div>
               </>
             )}
@@ -303,18 +313,18 @@ export default function PromocaoForm({
 
             {state.tipo === "oferta_flash" && (
               <>
-                <Field label="Título da Oferta Flash" value={state.titulo} onChange={(v) => update({ titulo: v })} error={errors.titulo} />
-                <Field label="Subtítulo da Oferta Flash" value={state.subtitulo} onChange={(v) => update({ subtitulo: v })} />
+                <Field label={t("promotion.form.flashTitle")} value={state.titulo} onChange={(v) => update({ titulo: v })} error={errors.titulo} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.flashSubtitle")} value={state.subtitulo} onChange={(v) => update({ subtitulo: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 <div className="md:col-span-2">
-                  <Field label="Produto da Oferta Flash" value={state.produto} onChange={(v) => update({ produto: v })} />
+                  <Field label={t("promotion.form.flashProduct")} value={state.produto} onChange={(v) => update({ produto: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 </div>
-                <Field label="Preço Antigo da Oferta Flash" value={state.preco_antigo} onChange={(v) => update({ preco_antigo: v })} />
-                <Field label="Preço da Oferta Flash" value={state.preco} onChange={(v) => update({ preco: v })} />
+                <Field label={t("promotion.form.flashOldPrice")} value={state.preco_antigo} onChange={(v) => update({ preco_antigo: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.flashPrice")} value={state.preco} onChange={(v) => update({ preco: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 <div className="md:col-span-2">
-                  <Field label="Link da Oferta Flash" value={state.link ?? ""} onChange={(v) => update({ link: v })} />
+                  <Field label={t("promotion.form.flashLink")} value={state.link ?? ""} onChange={(v) => update({ link: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 </div>
-                <Field label="Duração da Oferta Flash" value={state.duracao} onChange={(v) => update({ duracao: v })} />
-                <Field label="Imagem da Oferta Flash" value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} />} />
+                <Field label={t("promotion.form.flashDuration")} value={state.duracao} onChange={(v) => update({ duracao: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.flashImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
               </>
             )}
 
@@ -322,21 +332,21 @@ export default function PromocaoForm({
             {state.tipo === "battlepass" && (
               <>
                 <div className="md:col-span-2">
-                  <Field label="BattlePass Imagem" value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} />} />
+                  <Field label={t("promotion.form.battleImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 </div>
-                <Field label="BattlePass Nome" value={state.nome} onChange={(v) => update({ nome: v })} />
-                <Field label="BattlePass URL Botão" value={state.link ?? ""} onChange={(v) => update({ link: v })} />
+                <Field label={t("promotion.form.battleName")} value={state.nome} onChange={(v) => update({ nome: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.battleButtonUrl")} value={state.link ?? ""} onChange={(v) => update({ link: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 <div className="md:col-span-2 space-y-2">
-                  <label className={labelCls}>BattlePass Descrição</label>
+                  <label className={labelCls}>{t("promotion.form.battleDescription")}</label>
                   <textarea
                     value={state.descricao ?? ""}
                     onChange={(e) => update({ descricao: e.target.value })}
-                    placeholder="Detalhes da promoção..."
+                    placeholder={t("promotion.form.detailsPlaceholder")}
                     className={`${inputCls} h-24 resize-none`}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Field label="BattlePass Miniatura Imagem" value={state.miniatura} onChange={(v) => update({ miniatura: v })} />
+                  <Field label={t("promotion.form.battleThumb")} value={state.miniatura} onChange={(v) => update({ miniatura: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
                 </div>
               </>
             )}
@@ -344,19 +354,19 @@ export default function PromocaoForm({
 
             {state.tipo === "link_exclusivo" && (
               <div className="md:col-span-2">
-                <Field label="Imagem do Link" value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} />} />
+                <Field label={t("promotion.form.linkImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
               </div>
             )}
 
             {state.tipo === "oferta_cidade" && (
               <>
-                <Field label="Texto do Botão da Oferta da Cidade" value={state.texto_botao} onChange={(v) => update({ texto_botao: v })} />
-                <Field label="Preço Total da Oferta da Cidade" value={state.preco_total} onChange={(v) => update({ preco_total: v })} />
-                <Field label="Preço com Desconto da Oferta da Cidade" value={state.preco_desconto} onChange={(v) => update({ preco_desconto: v })} />
-                <Field label="Percentual de Desconto da Oferta da Cidade" value={state.percentual_desconto} onChange={(v) => update({ percentual_desconto: v })} />
-                <Field label="Título da Oferta da Cidade" value={state.titulo} onChange={(v) => update({ titulo: v })} />
-                <Field label="Vídeo da Oferta da Cidade" value={state.video} onChange={(v) => update({ video: v })} placeholder="https://youtube.com/..." />
-                <Field label="Cupom da Oferta da Cidade" value={state.cupom} onChange={(v) => update({ cupom: v })} />
+                <Field label={t("promotion.form.cityButtonText")} value={state.texto_botao} onChange={(v) => update({ texto_botao: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.cityTotalPrice")} value={state.preco_total} onChange={(v) => update({ preco_total: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.cityDiscountPrice")} value={state.preco_desconto} onChange={(v) => update({ preco_desconto: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.cityDiscountPercent")} value={state.percentual_desconto} onChange={(v) => update({ percentual_desconto: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.cityTitle")} value={state.titulo} onChange={(v) => update({ titulo: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
+                <Field label={t("promotion.form.cityVideo")} value={state.video} onChange={(v) => update({ video: v })} placeholder="https://youtube.com/..." />
+                <Field label={t("promotion.form.cityCoupon")} value={state.cupom} onChange={(v) => update({ cupom: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
               </>
             )}
 
@@ -376,7 +386,7 @@ export default function PromocaoForm({
                 </button>
               </div>
               {uploading && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#e5c12f]">Enviando...</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#e5c12f]">{t("common.uploading")}</span>
               )}
             </div>
           )}
@@ -386,12 +396,12 @@ export default function PromocaoForm({
         <section className="space-y-6">
           <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
             <LinkIcon size={18} className="text-[#e5c12f]" />
-            {state.tipo === "oferta_cidade" ? "Loja & Imagem por Cidade" : "Canais de Venda (Links)"}
+            {state.tipo === "oferta_cidade" ? t("promotion.form.storeImageByCity") : t("promotion.form.salesChannels")}
           </h3>
 
           {locais.length === 0 ? (
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-center text-white/50 text-sm">
-              Nenhum país cadastrado. Vá em <b className="text-[#e5c12f]">Gerenciar Locais</b>.
+              {t("promotion.form.noCountry")}
             </div>
           ) : (
             <>
@@ -426,7 +436,7 @@ export default function PromocaoForm({
                         <input
                           value={cur?.url || ""}
                           onChange={(e) => upsertLink(country.id, h.id, { url: e.target.value })}
-                          placeholder="https:// ... (link da loja)"
+                          placeholder={t("promotion.form.storeLinkPlaceholder")}
                           className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
                         />
                         {state.tipo === "oferta_cidade" && (
@@ -435,11 +445,11 @@ export default function PromocaoForm({
                               <input
                                 value={cur?.imagem || ""}
                                 onChange={(e) => upsertLink(country.id, h.id, { imagem: e.target.value })}
-                                placeholder="https:// ... (imagem da oferta)"
+                                placeholder={t("promotion.form.offerImagePlaceholder")}
                                 className="w-full bg-black/40 border border-white/10 rounded-lg pl-4 pr-11 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
                               />
                               <label
-                                title={isUp ? "Enviando..." : "Enviar imagem"}
+                                title={isUp ? t("common.uploading") : t("promotion.form.uploadImage")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer inline-flex items-center justify-center w-6 h-6 text-white/60 hover:text-[#e5c12f] transition-colors"
                               >
                                 <Upload size={13} className={isUp ? "animate-pulse" : ""} />
@@ -462,7 +472,7 @@ export default function PromocaoForm({
                     );
                   })
                 ) : (
-                  <p className="text-white/40 text-xs sm:col-span-2">Sem cidades neste país.</p>
+                  <p className="text-white/40 text-xs sm:col-span-2">{t("promotion.form.noCities")}</p>
                 )}
               </div>
             </>

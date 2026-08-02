@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, RefreshCw } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const UPDATE_KEY = "sghub_update_v5_permissions_details";
 
 export default function UpdateAppliedModal() {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -28,12 +30,12 @@ export default function UpdateAppliedModal() {
           {done ? <CheckCircle2 size={28} /> : <RefreshCw size={28} className="animate-spin" />}
         </div>
         <h2 className="font-display text-xl font-black text-white">
-          {done ? "Atualizado" : "Atualizando"}
+          {done ? t("update.titleDone") : t("update.titleDoing")}
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-white/55">
           {done
-            ? "Permissões e detalhes da promoção prontos."
-            : "Aplicando a nova versão do Hub Ingame."}
+            ? t("update.done")
+            : t("update.doing")}
         </p>
       </div>
     </div>

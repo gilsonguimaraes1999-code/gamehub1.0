@@ -6,6 +6,7 @@ import { ChevronLeft, Plus, Trash2, Globe2, MapPin, Save, GripVertical } from "l
 import { fetchBootstrap, salvarInterface, slugify, type Local } from "@/lib/sghub-api";
 import { useAuthSession } from "@/lib/auth-store";
 import { hasPermission } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
 import {
   DndContext,
   DragOverlay,
@@ -44,6 +45,7 @@ const parseId = (id: string) => {
 };
 
 function LocaisPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { session } = useAuthSession();
   const { data, isLoading } = useQuery({ queryKey: ["bootstrap"], queryFn: fetchBootstrap, staleTime: 60_000 });
@@ -62,11 +64,11 @@ function LocaisPage() {
       await salvarInterface({ ...iface, locais: next }, session?.nome || "OWNER");
     },
     onSuccess: async () => {
-      toast.success("Locais sincronizados!");
+      toast.success(t("locations.synced"));
       setDirty(false);
       await qc.invalidateQueries({ queryKey: ["bootstrap"] });
     },
-    onError: (e) => toast.error((e as Error).message || "Falha ao salvar."),
+    onError: (e) => toast.error((e as Error).message || t("locations.saveFail")),
   });
 
   const [novoPais, setNovoPais] = useState("");
@@ -84,7 +86,7 @@ function LocaisPage() {
   };
 
   const removePais = (id: string) => {
-    if (!confirm("Remover este país e todas as cidades dele?")) return;
+    if (!confirm(t("locations.removeCountryConfirm"))) return;
     setLocais(locais.filter((l) => l.id !== id));
     setDirty(true);
   };
@@ -225,15 +227,15 @@ function LocaisPage() {
   return (
     <div className="px-6 lg:px-12 py-10 pt-20 lg:pt-14 max-w-4xl mx-auto">
       <Link to="/hub" className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-white/50 hover:text-[#d4af37] mb-6">
-        <ChevronLeft size={14} /> Voltar
+        <ChevronLeft size={14} /> {t("common.back")}
       </Link>
       <header className="flex items-start justify-between gap-4 mb-10">
         <div>
           <h1 className="manual-comercial-gold text-4xl sm:text-5xl font-display font-black tracking-tight leading-tight pb-2">
-            Gerenciar Locais
+            {t("locations.title")}
           </h1>
           <p className="text-white/50 text-sm mt-3 max-w-xl">
-            Arraste a barrinha para reordenar países ou mover cidades entre eles.
+            {t("locations.subtitle")}
           </p>
         </div>
         {canEdit && <button
@@ -241,13 +243,13 @@ function LocaisPage() {
           disabled={!dirty || saveMut.isPending}
           className="shrink-0 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black font-black uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Save size={14} /> {saveMut.isPending ? "Sincronizando..." : dirty ? "Sincronizar" : "Salvo"}
+          <Save size={14} /> {saveMut.isPending ? t("common.syncing") : dirty ? t("common.sync") : t("common.saved")}
         </button>}
       </header>
 
       {!canView && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center text-red-200">
-          Você não tem permissão para visualizar locais.
+          {t("locations.noPermission")}
         </div>
       )}
 
@@ -257,15 +259,15 @@ function LocaisPage() {
           value={novoPais}
           onChange={(e) => setNovoPais(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addPais()}
-          placeholder="Novo país (ex.: França, Brasil, Portugal, Espanha...)"
+          placeholder={t("locations.newCountryPlaceholder")}
           className={fieldCls + " flex-1"}
         />
         <button onClick={addPais} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#d4af37]/40 text-[#d4af37] hover:bg-[#d4af37]/10 text-xs font-black uppercase tracking-widest">
-          <Plus size={14} /> Adicionar país
+          <Plus size={14} /> {t("locations.addCountry")}
         </button>
       </section>}
 
-      {canView && isLoading && <p className="text-white/40 text-sm uppercase tracking-widest">Carregando...</p>}
+      {canView && isLoading && <p className="text-white/40 text-sm uppercase tracking-widest">{t("common.loading")}</p>}
 
       {canView && (
         <DndContext
@@ -288,6 +290,7 @@ function LocaisPage() {
                   onAddCidade={(nome) => addCidade(pais.id, nome)}
                   onRemoveCidade={(cid) => removeCidade(pais.id, cid)}
                   onRenameCidade={(cid, nome) => renameCidade(pais.id, cid, nome)}
+                  t={t}
                 />
               ))}
             </div>
@@ -319,6 +322,7 @@ function LocaisPage() {
 
 function SortablePais({
   pais, canEdit, onRename, onRemove, onAddCidade, onRemoveCidade, onRenameCidade,
+  t,
 }: {
   pais: Local;
   canEdit: boolean;
@@ -327,6 +331,7 @@ function SortablePais({
   onAddCidade: (n: string) => void;
   onRemoveCidade: (cid: string) => void;
   onRenameCidade: (cid: string, nome: string) => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   const [nova, setNova] = useState("");
   const sortable = useSortable({ id: paisDndId(pais.id), data: { type: "pais" } });
@@ -348,9 +353,9 @@ function SortablePais({
           <button
             {...attributes}
             {...listeners}
-            aria-label="Arrastar país"
+            aria-label={t("locations.dragCountry")}
             className="cursor-grab active:cursor-grabbing p-1.5 rounded text-white/40 hover:text-[#d4af37] hover:bg-[#d4af37]/10 touch-none"
-            title="Arraste para reordenar"
+            title={t("locations.dragCountryTitle")}
           >
             <GripVertical size={18} />
           </button>
@@ -363,7 +368,7 @@ function SortablePais({
           className="flex-1 bg-transparent border-none outline-none text-white font-black text-lg uppercase tracking-widest focus:text-[#d4af37]"
         />
         {canEdit && (
-          <button onClick={onRemove} className="p-2 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-300" aria-label="Remover país">
+          <button onClick={onRemove} className="p-2 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-300" aria-label={t("locations.removeCountry")}>
             <Trash2 size={16} />
           </button>
         )}
@@ -382,11 +387,12 @@ function SortablePais({
               canEdit={canEdit}
               onRename={(nome) => onRenameCidade(c.id, nome)}
               onRemove={() => onRemoveCidade(c.id)}
+              t={t}
             />
           ))}
           {(!pais.cidades || pais.cidades.length === 0) && (
             <p className="text-white/30 text-xs italic md:col-span-2">
-              Sem cidades ainda. Arraste uma cidade aqui para movê-la.
+              {t("locations.emptyCities")}
             </p>
           )}
         </div>
@@ -402,14 +408,14 @@ function SortablePais({
               setNova("");
             }
           }}
-          placeholder="Nova cidade"
+          placeholder={t("locations.newCity")}
           className={fieldCls + " flex-1"}
         />
         <button
           onClick={() => { onAddCidade(nova); setNova(""); }}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 text-white/70 hover:border-[#d4af37]/40 hover:text-[#d4af37] text-xs font-black uppercase tracking-widest"
         >
-          <Plus size={12} /> Cidade
+          <Plus size={12} /> {t("common.city")}
         </button>
       </div>}
     </div>
@@ -417,13 +423,14 @@ function SortablePais({
 }
 
 function SortableCidade({
-  paisId, cidade, canEdit, onRename, onRemove,
+  paisId, cidade, canEdit, onRename, onRemove, t,
 }: {
   paisId: string;
   cidade: Cidade;
   canEdit: boolean;
   onRename: (n: string) => void;
   onRemove: () => void;
+  t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   const { setNodeRef, transform, transition, isDragging, attributes, listeners } = useSortable({
     id: cidadeDndId(paisId, cidade.id),
@@ -445,9 +452,9 @@ function SortableCidade({
         <button
           {...attributes}
           {...listeners}
-          aria-label="Arrastar cidade"
+          aria-label={t("locations.dragCity")}
           className="cursor-grab active:cursor-grabbing p-0.5 rounded text-white/30 hover:text-[#d4af37] touch-none"
-          title="Arraste para reordenar ou mover"
+          title={t("locations.dragCityTitle")}
         >
           <GripVertical size={14} />
         </button>
@@ -460,7 +467,7 @@ function SortableCidade({
         className="flex-1 bg-transparent border-none outline-none text-white text-sm focus:text-[#d4af37] min-w-0"
       />
       {canEdit && (
-        <button onClick={onRemove} className="p-1 rounded hover:bg-red-500/10 text-white/40 hover:text-red-300" aria-label="Remover cidade">
+        <button onClick={onRemove} className="p-1 rounded hover:bg-red-500/10 text-white/40 hover:text-red-300" aria-label={t("locations.removeCity")}>
           <Trash2 size={12} />
         </button>
       )}

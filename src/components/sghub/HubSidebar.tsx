@@ -3,21 +3,23 @@ import { useState } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useAuthSession } from "@/lib/auth-store";
 import { hasPermission } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
 
 const BRAND_LOGO_URL = "/alpha-logo.png";
 
-interface NavItem { to: string; label: string; icon: typeof LayoutGrid; ownerOnly?: boolean; permission?: string; }
+interface NavItem { to: string; labelKey: string; icon: typeof LayoutGrid; ownerOnly?: boolean; permission?: string; }
 
 const ITEMS: NavItem[] = [
-  { to: "/hub", label: "Início", icon: LayoutGrid, permission: "promocoes.ver" },
-  { to: "/hub/promocoes/nova", label: "Criar Promoção", icon: PlusCircle, permission: "promocoes.criar" },
-  { to: "/hub/locais", label: "Gerenciar Locais", icon: Globe2, permission: "locais.ver" },
-  { to: "/hub/contas", label: "Contas de Acesso", icon: Users, permission: "contas.ver" },
-  { to: "/hub/permissoes", label: "Permissões", icon: ShieldCheck, ownerOnly: true },
-  { to: "/hub/configuracoes", label: "Configurações", icon: Settings, permission: "configuracoes.ver" },
+  { to: "/hub", labelKey: "nav.home", icon: LayoutGrid, permission: "promocoes.ver" },
+  { to: "/hub/promocoes/nova", labelKey: "nav.createPromotion", icon: PlusCircle, permission: "promocoes.criar" },
+  { to: "/hub/locais", labelKey: "nav.manageLocations", icon: Globe2, permission: "locais.ver" },
+  { to: "/hub/contas", labelKey: "nav.accounts", icon: Users, permission: "contas.ver" },
+  { to: "/hub/permissoes", labelKey: "nav.permissions", icon: ShieldCheck, ownerOnly: true },
+  { to: "/hub/configuracoes", labelKey: "nav.settings", icon: Settings, permission: "configuracoes.ver" },
 ];
 
 export default function HubSidebar() {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const { session, logout } = useAuthSession();
   const navigate = useNavigate();
@@ -38,7 +40,7 @@ export default function HubSidebar() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 glass rounded-lg text-[#d4af37]"
-        aria-label="Menu"
+        aria-label={t("sidebar.menu")}
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -54,7 +56,7 @@ export default function HubSidebar() {
             </div>
             <div className="overflow-hidden">
               <h1 className="font-display font-bold text-lg tracking-tight whitespace-nowrap">SANTAGROUP</h1>
-              <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono whitespace-nowrap">CONFIG. HUB INGAME</p>
+              <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono whitespace-nowrap">{t("sidebar.subtitle")}</p>
             </div>
           </div>
 
@@ -76,7 +78,7 @@ export default function HubSidebar() {
                       : "text-white/60 hover:text-white hover:bg-white/5"}`}
                 >
                   <Icon size={18} className={active ? "text-black" : "group-hover:text-[#d4af37] transition-colors"} />
-                  <span className="font-medium text-sm">{item.label}</span>
+                  <span className="font-medium text-sm">{t(item.labelKey)}</span>
                 </Link>
               );
             })}
@@ -89,16 +91,16 @@ export default function HubSidebar() {
               <UserIcon size={20} />
             </div>
             <div className="overflow-hidden flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">{session?.nome || "Convidado"}</p>
+              <p className="text-sm font-bold text-white truncate">{session?.nome || t("common.guest")}</p>
               <p className="text-[10px] text-[#d4af37] font-black uppercase tracking-tighter truncate">
-                {session?.tipo || "Acesso"}
+                {session?.tipo || t("common.access")}
               </p>
             </div>
             <button
               onClick={handleLogout}
               className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"
-              title="Sair"
-              aria-label="Sair"
+              title={t("sidebar.logout")}
+              aria-label={t("sidebar.logout")}
             >
               <LogOut size={16} />
             </button>

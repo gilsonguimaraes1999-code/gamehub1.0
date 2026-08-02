@@ -7,6 +7,8 @@ import UpdateAppliedModal from "@/components/sghub/UpdateAppliedModal";
 import { setStoredSession, stopImpersonation, getOriginalSession, useAuthSession } from "@/lib/auth-store";
 import { fetchBootstrap } from "@/lib/sghub-api";
 import { normalizeCargo, permissoesPadrao, TODAS_PERMISSOES, PERMISSOES_VISITANTE, type PermissoesPorCargo } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
+import LanguageSelector from "@/components/sghub/LanguageSelector";
 
 
 export const Route = createFileRoute("/hub")({
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/hub")({
 });
 
 function HubLayout() {
+  const { t } = useI18n();
   const { session, hydrated, impersonating } = useAuthSession();
   const navigate = useNavigate();
   const { data } = useQuery({ queryKey: ["bootstrap"], queryFn: fetchBootstrap, staleTime: 60_000, enabled: !!session });
@@ -64,7 +67,7 @@ function HubLayout() {
       <HubSidebar />
       <main
         className="lg:ml-[280px] min-h-screen bg-black bg-no-repeat bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: "url('https://i.imgur.com/isQwRJc.png')", backgroundAttachment: "fixed" }}
+        style={{ backgroundImage: "url('/manual-categories-bg.png')", backgroundAttachment: "fixed" }}
       >
         {impersonating && (
           <div className="sticky top-0 z-40 bg-[#d4af37] text-black border-b-2 border-black/20 shadow-lg">
@@ -72,23 +75,25 @@ function HubLayout() {
               <div className="flex items-center gap-2 min-w-0">
                 <Eye size={14} className="shrink-0" />
                 <span className="truncate">
-                  Visualizando como <span className="underline">{session.nome}</span>
-                  {original ? <> — logado como {original.nome}</> : null}
+                  {t("hub.impersonating", { name: "" })}<span className="underline">{session.nome}</span>
+                  {original ? <> — {t("hub.loggedAs", { name: original.nome })}</> : null}
                 </span>
               </div>
               <button
                 onClick={handleStopImpersonation}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-black text-[#f9e29f] hover:bg-black/80"
               >
-                <LogOut size={12} /> Sair do modo visualização
+                <LogOut size={12} /> {t("hub.stopImpersonation")}
               </button>
             </div>
           </div>
         )}
         <Outlet />
       </main>
+      <div className="fixed bottom-5 right-5 z-50 sm:bottom-6 sm:right-6">
+        <LanguageSelector />
+      </div>
       <UpdateAppliedModal />
     </div>
   );
 }
-

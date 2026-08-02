@@ -12,17 +12,19 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { I18nProvider, translate, useI18n } from "@/lib/i18n";
 
 function NotFoundComponent() {
+  const { t } = useI18n();
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-4 text-white">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-[#d4af37]">404</h1>
-        <h2 className="mt-4 text-xl font-semibold">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-white/60">A página que você procura não existe.</p>
+        <h2 className="mt-4 text-xl font-semibold">{t("notFound.title")}</h2>
+        <p className="mt-2 text-sm text-white/60">{t("notFound.text")}</p>
         <div className="mt-6">
           <Link to="/" className="inline-flex items-center justify-center rounded-md bg-[#d4af37] px-4 py-2 text-sm font-bold text-black hover:brightness-110">
-            Ir para o início
+            {t("notFound.home")}
           </Link>
         </div>
       </div>
@@ -31,6 +33,7 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const { t } = useI18n();
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -40,17 +43,17 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-4 text-white">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight">Erro ao carregar a página</h1>
-        <p className="mt-2 text-sm text-white/60">Algo deu errado. Tente novamente.</p>
+        <h1 className="text-xl font-semibold tracking-tight">{t("error.title")}</h1>
+        <p className="mt-2 text-sm text-white/60">{t("error.text")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
             className="inline-flex items-center justify-center rounded-md bg-[#d4af37] px-4 py-2 text-sm font-bold text-black hover:brightness-110"
           >
-            Tentar novamente
+            {t("common.tryAgain")}
           </button>
           <a href="/" className="inline-flex items-center justify-center rounded-md border border-white/10 bg-transparent px-4 py-2 text-sm font-medium text-white hover:bg-white/5">
-            Voltar
+            {t("common.back")}
           </a>
         </div>
       </div>
@@ -63,11 +66,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Gamehub SantaGroup" },
-      { name: "description", content: "Painel de gestão de promoções do Hub Ingame SantaGroup." },
+      { title: translate("meta.title") },
+      { name: "description", content: translate("meta.description") },
       { name: "author", content: "SantaGroup" },
       { property: "og:title", content: "Gamehub SantaGroup" },
-      { property: "og:description", content: "Gerenciador premium de ofertas do Hub Ingame SantaGroup." },
+      { property: "og:description", content: translate("meta.ogDescription") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -106,8 +109,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster theme="dark" richColors position="top-right" offset={60} />
+      <I18nProvider>
+        <Outlet />
+        <Toaster theme="dark" richColors position="top-right" offset={60} />
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

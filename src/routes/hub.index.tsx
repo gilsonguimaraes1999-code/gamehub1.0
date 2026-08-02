@@ -6,39 +6,34 @@ import { Plus, Search, ChevronDown, Calendar, MapPin, X, Copy, Pencil } from "lu
 import { fetchBootstrap, sortPromocoesRecentesPrimeiro, type Local, type Promocao } from "@/lib/sghub-api";
 import { useAuthSession } from "@/lib/auth-store";
 import { hasPermission } from "@/lib/permissions";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/hub/")({
   ssr: false,
   component: HubHome,
 });
 
-const TIPO_LABELS: Record<string, string> = {
-  vip_mensal: "VIP MENSAL",
-  oferta_flash: "OFERTA FLASH",
-  link_exclusivo: "LINK EXCLUSIVO",
-  battlepass: "BATTLEPASS",
-  oferta_cidade: "OFERTA DA CIDADE",
+const TIPO_LABEL_KEYS: Record<string, string> = {
+  vip_mensal: "promotion.type.vip_mensal",
+  oferta_flash: "promotion.type.oferta_flash",
+  link_exclusivo: "promotion.type.link_exclusivo",
+  battlepass: "promotion.type.battlepass",
+  oferta_cidade: "promotion.type.oferta_cidade",
 };
 
 const TIPO_TABS = [
-  { key: "todos", label: "TODOS" },
-  { key: "vip_mensal", label: "VIP MENSAL" },
-  { key: "oferta_flash", label: "OFERTA FLASH" },
-  { key: "link_exclusivo", label: "LINK EXCLUSIVO" },
-  { key: "battlepass", label: "BATTLEPASS" },
-  { key: "oferta_cidade", label: "OFERTA DA CIDADE" },
+  { key: "todos", labelKey: "promotion.type.all" },
+  { key: "vip_mensal", labelKey: "promotion.type.vip_mensal" },
+  { key: "oferta_flash", labelKey: "promotion.type.oferta_flash" },
+  { key: "link_exclusivo", labelKey: "promotion.type.link_exclusivo" },
+  { key: "battlepass", labelKey: "promotion.type.battlepass" },
+  { key: "oferta_cidade", labelKey: "promotion.type.oferta_cidade" },
 ];
 
 type StatusFilter = "todos" | "ativo" | "inativo";
 
-function formatDate(iso?: string) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
 function HubHome() {
+  const { t, formatDate } = useI18n();
   const { session } = useAuthSession();
   const { data, isLoading, error } = useQuery({
     queryKey: ["bootstrap"],
@@ -89,7 +84,7 @@ function HubHome() {
       if (pais !== "todos" && !promoCountries(p).has(pais)) return false;
       if (search) {
         const q = search.toLowerCase();
-        const hay = `${p.nome || ""} ${p.nome_interno || ""} ${p.tipo || ""} ${TIPO_LABELS[p.tipo] || ""}`.toLowerCase();
+        const hay = `${p.nome || ""} ${p.nome_interno || ""} ${p.tipo || ""} ${t(TIPO_LABEL_KEYS[p.tipo] || "")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -132,7 +127,7 @@ function HubHome() {
             HUB INGAME
           </h1>
           <p className="text-white/60 max-w-2xl leading-relaxed mt-4 text-sm sm:text-base">
-            Bem-vindo ao Comercial SantaGroup. Selecione uma promoção para ver os detalhes.
+            {t("home.subtitle")}
           </p>
         </div>
         {canCreate && (
@@ -141,15 +136,15 @@ function HubHome() {
             className="shrink-0 flex items-center gap-2 rounded-2xl bg-gradient-to-b from-[#f9e29f] via-[#d4af37] to-[#8f6b00] text-black font-black uppercase tracking-widest text-xs sm:text-sm px-5 sm:px-6 py-4 hover:-translate-y-0.5 transition-transform"
           >
             <Plus size={18} strokeWidth={3} />
-            <span className="hidden sm:inline">Nova Promoção</span>
-            <span className="sm:hidden">Nova</span>
+            <span className="hidden sm:inline">{t("home.newPromotion")}</span>
+            <span className="sm:hidden">{t("home.newShort")}</span>
           </Link>
         )}
       </header>
 
       {!canView && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center text-red-200">
-          Você não tem permissão para visualizar promoções.
+          {t("home.noPermission")}
         </div>
       )}
 
@@ -162,7 +157,7 @@ function HubHome() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar por nome ou tipo..."
+          placeholder={t("home.searchPlaceholder")}
           className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-white/40 outline-none focus:border-[#d4af37]/50 focus:bg-white/[0.05] transition-all"
         />
       </div>
@@ -170,19 +165,19 @@ function HubHome() {
       {/* Tabs + Status selector */}
       <div className="flex flex-wrap items-center gap-2 mb-8">
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-          {TIPO_TABS.map((t) => {
-            const active = tipo === t.key;
-            const count = countsByTipo[t.key] || 0;
+          {TIPO_TABS.map((tab) => {
+            const active = tipo === tab.key;
+            const count = countsByTipo[tab.key] || 0;
             return (
               <button
-                key={t.key}
-                onClick={() => setTipo(t.key)}
+                key={tab.key}
+                onClick={() => setTipo(tab.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all
                   ${active
                     ? "bg-[#d4af37] text-black shadow-[0_0_15px_rgba(212,175,55,0.25)]"
                     : "bg-white/[0.03] border border-white/10 text-white/60 hover:text-white hover:border-white/20"}`}
               >
-                <span>{t.label}</span>
+                <span>{t(tab.labelKey)}</span>
                 <span className={`px-2 py-0.5 rounded-md text-[10px] ${active ? "bg-black/20 text-black" : "bg-white/5 text-white/40"}`}>
                   {count}
                 </span>
@@ -197,9 +192,9 @@ function HubHome() {
             onClick={() => setStatusOpen((v) => !v)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white/[0.03] border border-white/10 text-white/80 hover:border-[#d4af37]/40 transition-all"
           >
-            <span className="text-white/40">Status:</span>
+            <span className="text-white/40">{t("common.status")}:</span>
             <span className="text-[#d4af37]">
-              {status === "todos" ? "Todos" : status === "ativo" ? "Ativo" : "Inativo"}
+              {status === "todos" ? t("common.all") : status === "ativo" ? t("common.active") : t("common.inactive")}
             </span>
             <ChevronDown size={14} className={`transition-transform ${statusOpen ? "rotate-180" : ""}`} />
           </button>
@@ -215,7 +210,7 @@ function HubHome() {
                       ${status === opt ? "text-[#d4af37] bg-white/5" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
                   >
                     <span className={`w-2 h-2 rounded-full ${status === opt ? "bg-[#d4af37]" : "bg-white/20"}`} />
-                    <span className="capitalize">{opt === "todos" ? "Todos" : opt}</span>
+                    <span className="capitalize">{opt === "todos" ? t("common.all") : opt === "ativo" ? t("common.active") : t("common.inactive")}</span>
                   </button>
                 ))}
               </div>
@@ -227,7 +222,7 @@ function HubHome() {
       {/* País tabs */}
       {paisesDisponiveis.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-8 -mt-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mr-1">País:</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mr-1">{t("common.country")}:</span>
           <button
             onClick={() => setPais("todos")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all
@@ -235,7 +230,7 @@ function HubHome() {
                 ? "bg-[#d4af37]/15 border border-[#d4af37]/50 text-[#f9e29f]"
                 : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white hover:border-white/20"}`}
           >
-            Todos
+            {t("common.all")}
           </button>
           {paisesDisponiveis.map((p) => {
             const active = pais === p.id;
@@ -261,17 +256,17 @@ function HubHome() {
       {/* Grid */}
       {isLoading && (
         <div className="flex items-center justify-center py-20 text-white/40 text-sm uppercase tracking-widest">
-          Carregando promoções...
+          {t("home.loadingPromotions")}
         </div>
       )}
       {error && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-red-300">
-          Erro ao carregar: {(error as Error).message}
+          {t("home.loadError", { message: (error as Error).message })}
         </div>
       )}
       {!isLoading && !error && filtered.length === 0 && (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center text-white/40">
-          Nenhuma promoção encontrada com os filtros atuais.
+          {t("home.empty")}
         </div>
       )}
 
@@ -288,9 +283,10 @@ function HubHome() {
 }
 
 function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao; cityNameById: Map<string, string>; canEdit: boolean }) {
+  const { t, formatDate } = useI18n();
   const status = (promocao.status || "").toLowerCase();
   const isAtivo = status === "ativo";
-  const tipoLabel = TIPO_LABELS[promocao.tipo] || promocao.tipo?.toUpperCase() || "—";
+  const tipoLabel = TIPO_LABEL_KEYS[promocao.tipo] ? t(TIPO_LABEL_KEYS[promocao.tipo]) : promocao.tipo?.toUpperCase() || "—";
   const cidades = Array.from(
     new Set((promocao.links_por_cidade || []).map((l) => cityNameById.get(l.cityId) || l.cityId))
   );
@@ -331,11 +327,11 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
       <div className="relative z-10 flex items-start gap-2.5 mb-3 pr-20">
         <span
           className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${isAtivo ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"}`}
-          aria-label={isAtivo ? "Ativo" : "Inativo"}
+          aria-label={isAtivo ? t("common.active") : t("common.inactive")}
         />
         <div className="min-w-0 flex-1">
           <h3 className="font-black text-white text-base leading-tight line-clamp-2 break-words">
-            {promocao.nome_interno || promocao.nome || "Sem nome"}
+            {promocao.nome_interno || promocao.nome || t("home.noName")}
           </h3>
           <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37] mt-1.5">
             {tipoLabel}
@@ -369,17 +365,17 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
             </span>
             <span className="flex items-center gap-1.5 shrink-0">
               <MapPin size={12} className="text-white/40" />
-              {cidadesCount} {cidadesCount === 1 ? "cidade" : "cidades"}
+              {cidadesCount} {cidadesCount === 1 ? t("common.citySingular") : t("common.cities")}
             </span>
           </div>
           <Link to="/hub/detalhes/$id" params={{ id: promocao.id }} className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[#d4af37] group-hover:text-[#f9e29f] transition-colors">
-            Ver detalhes →
+            {t("home.viewDetails")}
           </Link>
 
         </div>
         {canEdit && (
           <Link to="/hub/promocoes/$id" params={{ id: promocao.id }} className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/60 hover:border-[#d4af37]/40 hover:text-[#f9e29f]">
-            <Pencil size={12} /> Editar
+            <Pencil size={12} /> {t("common.edit")}
           </Link>
         )}
       </div>
@@ -392,7 +388,7 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
             ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
             : "bg-red-500/15 border-red-500/50 text-red-300"}`}
       >
-        {isAtivo ? "Ativo" : "Inativo"}
+        {isAtivo ? t("common.active") : t("common.inactive")}
       </span>
     </article>
   );
@@ -402,28 +398,29 @@ function fieldLine(label: string, value?: string) {
   return `${label}: ${value || "—"}`;
 }
 
-function buildPromoLines(p: Promocao, cityName: string, cityUrl: string) {
+function buildPromoLines(p: Promocao, cityName: string, cityUrl: string, t: (key: string) => string) {
   const tipo = p.tipo || "vip_mensal";
   if (tipo === "oferta_flash") return [
-    fieldLine("Cidade", cityName), fieldLine("Título", p.titulo), fieldLine("Subtítulo", p.subtitulo), fieldLine("Produto", p.produto),
-    fieldLine("Preço Antigo", p.preco_antigo), fieldLine("Preço", p.preco), fieldLine("Link", cityUrl || p.link), fieldLine("Duração", p.duracao), fieldLine("Imagem", p.imagem),
+    fieldLine(t("common.city"), cityName), fieldLine(t("common.title"), p.titulo), fieldLine(t("common.subtitle"), p.subtitulo), fieldLine(t("common.product"), p.produto),
+    fieldLine(t("promotion.field.oldPrice"), p.preco_antigo), fieldLine(t("promotion.field.price"), p.preco), fieldLine(t("common.link"), cityUrl || p.link), fieldLine(t("common.duration"), p.duracao), fieldLine(t("common.image"), p.imagem),
   ];
   if (tipo === "battlepass") return [
-    fieldLine("Cidade", cityName), fieldLine("BattlePass Imagem", p.imagem), fieldLine("BattlePass Nome", p.nome), fieldLine("BattlePass URL Botão", cityUrl || p.link),
-    fieldLine("BattlePass Descrição", p.descricao), fieldLine("BattlePass Miniatura Imagem", p.miniatura),
+    fieldLine(t("common.city"), cityName), fieldLine(t("promotion.form.battleImage"), p.imagem), fieldLine(t("promotion.form.battleName"), p.nome), fieldLine(t("promotion.form.battleButtonUrl"), cityUrl || p.link),
+    fieldLine(t("promotion.form.battleDescription"), p.descricao), fieldLine(t("promotion.form.battleThumb"), p.miniatura),
   ];
   if (tipo === "oferta_cidade") return [
-    fieldLine("Cidade", cityName), fieldLine("Imagem", p.imagem), fieldLine("Texto do Botão", p.texto_botao), fieldLine("Preço Total", p.preco_total),
-    fieldLine("Preço Desconto", p.preco_desconto), fieldLine("Percentual", p.percentual_desconto), fieldLine("Título", p.titulo), fieldLine("Vídeo", p.video), fieldLine("Link", cityUrl), fieldLine("Cupom", p.cupom),
+    fieldLine(t("common.city"), cityName), fieldLine(t("common.image"), p.imagem), fieldLine(t("promotion.field.buttonText"), p.texto_botao), fieldLine(t("promotion.field.totalPrice"), p.preco_total),
+    fieldLine(t("promotion.field.discountPrice"), p.preco_desconto), fieldLine(t("promotion.field.discountPercent"), p.percentual_desconto), fieldLine(t("common.title"), p.titulo), fieldLine(t("promotion.field.video"), p.video), fieldLine(t("common.link"), cityUrl), fieldLine(t("common.coupon"), p.cupom),
   ];
-  if (tipo === "link_exclusivo") return [fieldLine("Cidade", cityName), fieldLine("Imagem", p.imagem), fieldLine("Link", cityUrl || p.link)];
+  if (tipo === "link_exclusivo") return [fieldLine(t("common.city"), cityName), fieldLine(t("common.image"), p.imagem), fieldLine(t("common.link"), cityUrl || p.link)];
   return [
-    fieldLine("Cidade", cityName), fieldLine("Nome", p.nome), fieldLine("Cupom", p.cupom), fieldLine("Descrição", p.descricao),
-    fieldLine("Validade", p.validade), fieldLine("Link", cityUrl || p.link), fieldLine("Imagem", p.imagem),
+    fieldLine(t("common.city"), cityName), fieldLine(t("common.name"), p.nome), fieldLine(t("common.coupon"), p.cupom), fieldLine(t("common.description"), p.descricao),
+    fieldLine(t("common.validity"), p.validade), fieldLine(t("common.link"), cityUrl || p.link), fieldLine(t("common.image"), p.imagem),
   ];
 }
 
 function DetalhesModal({ promocao, locais, onClose }: { promocao: Promocao; locais: Local[]; onClose: () => void }) {
+  const { t } = useI18n();
   const cityNames = useMemo(() => {
     const map = new Map<string, string>();
     for (const pais of locais) for (const cidade of pais.cidades || []) map.set(cidade.id, cidade.nome);
@@ -433,7 +430,7 @@ function DetalhesModal({ promocao, locais, onClose }: { promocao: Promocao; loca
 
   const copy = async (text: string) => {
     await navigator.clipboard.writeText(text);
-    toast.success("Informações copiadas.");
+    toast.success(t("details.copySuccess"));
   };
 
   return (
@@ -441,24 +438,24 @@ function DetalhesModal({ promocao, locais, onClose }: { promocao: Promocao; loca
       <div className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b0b] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-white/10 p-5">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">{TIPO_LABELS[promocao.tipo] || promocao.tipo}</p>
-            <h2 className="mt-1 break-words font-display text-2xl font-black text-white">{promocao.nome_interno || promocao.nome || promocao.titulo || "Detalhes"}</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">{TIPO_LABEL_KEYS[promocao.tipo] ? t(TIPO_LABEL_KEYS[promocao.tipo]) : promocao.tipo}</p>
+            <h2 className="mt-1 break-words font-display text-2xl font-black text-white">{promocao.nome_interno || promocao.nome || promocao.titulo || t("common.details")}</h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-white/50 hover:bg-white/5 hover:text-white" aria-label="Fechar">
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-white/50 hover:bg-white/5 hover:text-white" aria-label={t("common.close")}>
             <X size={20} />
           </button>
         </div>
         <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
           {links.map((link, idx) => {
-            const cityName = cityNames.get(link.cityId) || link.cityId || `Cidade ${idx + 1}`;
-            const lines = buildPromoLines(promocao, cityName, link.url);
+            const cityName = cityNames.get(link.cityId) || link.cityId || `${t("common.city")} ${idx + 1}`;
+            const lines = buildPromoLines(promocao, cityName, link.url, t);
             const text = lines.join("\n");
             return (
               <section key={`${link.countryId}-${link.cityId}-${idx}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="font-black text-white">{cityName}</h3>
                   <button type="button" onClick={() => copy(text)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:brightness-110">
-                    <Copy size={13} /> Copiar
+                    <Copy size={13} /> {t("common.copy")}
                   </button>
                 </div>
                 <pre className="whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black/60 p-4 font-mono text-xs leading-relaxed text-white/75">{text}</pre>
