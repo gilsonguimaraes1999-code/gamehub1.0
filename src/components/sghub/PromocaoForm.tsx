@@ -5,6 +5,7 @@ import type { Local, Promocao, LinkPorCidade } from "@/lib/sghub-api";
 import { uploadImage } from "@/lib/sghub-api";
 import ModalPreview from "@/components/sghub/ModalPreview";
 import { useI18n } from "@/lib/i18n";
+import { getPromotionValidationErrors } from "@/lib/promotion-validation";
 
 const TIPOS = [
   { value: "vip_mensal", labelKey: "promotion.type.vip_mensal" },
@@ -12,6 +13,7 @@ const TIPOS = [
   { value: "link_exclusivo", labelKey: "promotion.type.link_exclusivo" },
   { value: "battlepass", labelKey: "promotion.type.battlepassInfo" },
   { value: "oferta_cidade", labelKey: "promotion.type.oferta_cidade" },
+  { value: "cupom", labelKey: "promotion.type.cupom" },
 ];
 
 interface Props {
@@ -36,6 +38,8 @@ function Field({
   error,
   trailing,
   defaultPlaceholder,
+  type = "text",
+  maxLength,
 }: {
   label: string;
   value?: string;
@@ -44,6 +48,8 @@ function Field({
   error?: boolean;
   trailing?: React.ReactNode;
   defaultPlaceholder?: (label: string) => string;
+  type?: string;
+  maxLength?: number;
 }) {
   return (
     <div className="space-y-2">
@@ -51,12 +57,19 @@ function Field({
       <div className="relative">
         <input
           value={value ?? ""}
+          type={type}
+          maxLength={maxLength}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder ?? (defaultPlaceholder ? defaultPlaceholder(label.toLowerCase()) : "")}
+          placeholder={
+            placeholder ??
+            (defaultPlaceholder ? defaultPlaceholder(label.toLowerCase()) : "")
+          }
           className={`${inputCls} ${trailing ? "pr-12" : ""} ${error ? "border-red-500 focus:ring-red-500" : ""}`}
         />
         {trailing && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">{trailing}</div>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+            {trailing}
+          </div>
         )}
       </div>
     </div>
@@ -90,7 +103,6 @@ function ImageUploadButton({
   );
 }
 
-
 export default function PromocaoForm({
   initial,
   locais,
@@ -121,6 +133,10 @@ export default function PromocaoForm({
     preco_total: initial?.preco_total || "",
     preco_desconto: initial?.preco_desconto || "",
     percentual_desconto: initial?.percentual_desconto || "",
+    categoria: initial?.categoria || "",
+    valor_minimo: initial?.valor_minimo || "",
+    data_inicio: initial?.data_inicio || "",
+    data_expiracao: initial?.data_expiracao || "",
     video: initial?.video || "",
     link: initial?.link || "",
     links_por_cidade: initial?.links_por_cidade || [],
@@ -129,19 +145,28 @@ export default function PromocaoForm({
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadingCity, setUploadingCity] = useState<string | null>(null);
-  const [activeCountry, setActiveCountry] = useState<string>(locais[0]?.id || "");
+  const [activeCountry, setActiveCountry] = useState<string>(
+    locais[0]?.id || "",
+  );
 
-  const update = (patch: Partial<Promocao>) => setState((s) => ({ ...s, ...patch }));
+  const update = (patch: Partial<Promocao>) =>
+    setState((s) => ({ ...s, ...patch }));
 
   const links: LinkPorCidade[] = useMemo(
     () => state.links_por_cidade || [],
-    [state.links_por_cidade]
+    [state.links_por_cidade],
   );
 
-  const upsertLink = (countryId: string, cityId: string, patch: Partial<Omit<LinkPorCidade, "countryId" | "cityId">>) => {
+  const upsertLink = (
+    countryId: string,
+    cityId: string,
+    patch: Partial<Omit<LinkPorCidade, "countryId" | "cityId">>,
+  ) => {
     setState((s) => {
       const prev = s.links_por_cidade || [];
-      const idx = prev.findIndex((l) => l.countryId === countryId && l.cityId === cityId);
+      const idx = prev.findIndex(
+        (l) => l.countryId === countryId && l.cityId === cityId,
+      );
       const next = [...prev];
       const merged: LinkPorCidade = {
         countryId,
@@ -162,7 +187,8 @@ export default function PromocaoForm({
   };
 
   const handleFile = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) return toast.error(t("promotion.form.bigImage"));
+    if (file.size > 5 * 1024 * 1024)
+      return toast.error(t("promotion.form.bigImage"));
     setUploading(true);
     try {
       const dataUrl = await new Promise<string>((res, rej) => {
@@ -181,8 +207,13 @@ export default function PromocaoForm({
     }
   };
 
-  const handleCityFile = async (countryId: string, cityId: string, file: File) => {
-    if (file.size > 5 * 1024 * 1024) return toast.error(t("promotion.form.bigImage"));
+  const handleCityFile = async (
+    countryId: string,
+    cityId: string,
+    file: File,
+  ) => {
+    if (file.size > 5 * 1024 * 1024)
+      return toast.error(t("promotion.form.bigImage"));
     const key = `${countryId}:${cityId}`;
     setUploadingCity(key);
     try {
@@ -203,10 +234,7 @@ export default function PromocaoForm({
   };
 
   const validate = (): boolean => {
-    const errs: Record<string, boolean> = {};
-    if (!state.nome_interno?.trim()) errs.nome_interno = true;
-    if (state.tipo === "vip_mensal" && !state.nome?.trim()) errs.nome = true;
-    if (state.tipo === "oferta_flash" && !state.titulo?.trim()) errs.titulo = true;
+    const errs = getPromotionValidationErrors(state);
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -243,241 +271,576 @@ export default function PromocaoForm({
 
       <div className="grid grid-cols-1 gap-6">
         <div className="bg-[#111] p-6 sm:p-8 rounded-2xl border border-white/5 space-y-10 shadow-2xl">
-        {/* Informações Gerais */}
-        <section className="space-y-6">
-          <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
-            <Info size={18} className="text-[#e5c12f]" /> {t("promotion.form.general")}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Field
-              label={t("promotion.form.internalName")}
-              value={state.nome_interno}
-              onChange={(v) => update({ nome_interno: v })}
-              placeholder={t("promotion.form.internalNamePlaceholder")}
-              error={errors.nome_interno}
-              defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })}
-            />
-            <div className="space-y-2">
-              <label className={labelCls}>{t("promotion.form.type")}</label>
-              <select
-                value={state.tipo}
-                onChange={(e) => update({ tipo: e.target.value })}
-                className={`${inputCls} appearance-none`}
-              >
-                {TIPOS.map((o) => (
-                  <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className={labelCls}>{t("common.status")}</label>
-              <select
-                value={state.status}
-                onChange={(e) => update({ status: e.target.value })}
-                className={`${inputCls} appearance-none`}
-              >
-                <option value="ativo">{t("common.active")}</option>
-                <option value="inativo">{t("common.inactive")}</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {/* Conteúdo do Modal */}
-        <section className="space-y-6">
-          <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
-            <Layers size={18} className="text-[#e5c12f]" /> {t("promotion.form.modalContent")}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {state.tipo === "vip_mensal" && (
-              <>
-                <Field label={t("promotion.form.vipName")} value={state.nome} onChange={(v) => update({ nome: v })} error={errors.nome} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.vipCoupon")} value={state.cupom} onChange={(v) => update({ cupom: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <div className="md:col-span-2 space-y-2">
-                  <label className={labelCls}>{t("promotion.form.vipDescription")}</label>
-                  <textarea
-                    value={state.descricao ?? ""}
-                    onChange={(e) => update({ descricao: e.target.value })}
-                    placeholder={t("promotion.form.detailsPlaceholder")}
-                    className={`${inputCls} h-24 resize-none`}
-                  />
-                </div>
-                <Field label={t("promotion.form.vipValidity")} value={state.validade} onChange={(v) => update({ validade: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.vipLink")} value={state.link ?? ""} onChange={(v) => update({ link: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <div className="md:col-span-2">
-                  <Field label={t("promotion.form.vipImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                </div>
-              </>
-            )}
-
-
-            {state.tipo === "oferta_flash" && (
-              <>
-                <Field label={t("promotion.form.flashTitle")} value={state.titulo} onChange={(v) => update({ titulo: v })} error={errors.titulo} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.flashSubtitle")} value={state.subtitulo} onChange={(v) => update({ subtitulo: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <div className="md:col-span-2">
-                  <Field label={t("promotion.form.flashProduct")} value={state.produto} onChange={(v) => update({ produto: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                </div>
-                <Field label={t("promotion.form.flashOldPrice")} value={state.preco_antigo} onChange={(v) => update({ preco_antigo: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.flashPrice")} value={state.preco} onChange={(v) => update({ preco: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <div className="md:col-span-2">
-                  <Field label={t("promotion.form.flashLink")} value={state.link ?? ""} onChange={(v) => update({ link: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                </div>
-                <Field label={t("promotion.form.flashDuration")} value={state.duracao} onChange={(v) => update({ duracao: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.flashImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-              </>
-            )}
-
-
-            {state.tipo === "battlepass" && (
-              <>
-                <div className="md:col-span-2">
-                  <Field label={t("promotion.form.battleImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                </div>
-                <Field label={t("promotion.form.battleName")} value={state.nome} onChange={(v) => update({ nome: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.battleButtonUrl")} value={state.link ?? ""} onChange={(v) => update({ link: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <div className="md:col-span-2 space-y-2">
-                  <label className={labelCls}>{t("promotion.form.battleDescription")}</label>
-                  <textarea
-                    value={state.descricao ?? ""}
-                    onChange={(e) => update({ descricao: e.target.value })}
-                    placeholder={t("promotion.form.detailsPlaceholder")}
-                    className={`${inputCls} h-24 resize-none`}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Field label={t("promotion.form.battleThumb")} value={state.miniatura} onChange={(v) => update({ miniatura: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                </div>
-              </>
-            )}
-
-
-            {state.tipo === "link_exclusivo" && (
-              <div className="md:col-span-2">
-                <Field label={t("promotion.form.linkImage")} value={state.imagem} onChange={(v) => update({ imagem: v })} trailing={<ImageUploadButton uploading={uploading} onFile={handleFile} uploadTitle={t("promotion.form.uploadImage")} uploadingTitle={t("common.uploading")} />} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-              </div>
-            )}
-
-            {state.tipo === "oferta_cidade" && (
-              <>
-                <Field label={t("promotion.form.cityButtonText")} value={state.texto_botao} onChange={(v) => update({ texto_botao: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.cityTotalPrice")} value={state.preco_total} onChange={(v) => update({ preco_total: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.cityDiscountPrice")} value={state.preco_desconto} onChange={(v) => update({ preco_desconto: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.cityDiscountPercent")} value={state.percentual_desconto} onChange={(v) => update({ percentual_desconto: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.cityTitle")} value={state.titulo} onChange={(v) => update({ titulo: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-                <Field label={t("promotion.form.cityVideo")} value={state.video} onChange={(v) => update({ video: v })} placeholder="https://youtube.com/..." />
-                <Field label={t("promotion.form.cityCoupon")} value={state.cupom} onChange={(v) => update({ cupom: v })} defaultPlaceholder={(label) => t("promotion.form.defaultPlaceholder", { label })} />
-              </>
-            )}
-
-          </div>
-
-          {/* Preview thumbnail */}
-          {state.imagem && (
-            <div className="flex items-center gap-3 pt-2">
-              <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
-                <img src={state.imagem} alt="Preview" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => update({ imagem: "" })}
-                  className="absolute top-1 right-1 p-1 rounded-md bg-black/70 text-red-400 hover:bg-red-500 hover:text-white"
+          {/* Informações Gerais */}
+          <section className="space-y-6">
+            <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
+              <Info size={18} className="text-[#e5c12f]" />{" "}
+              {t("promotion.form.general")}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Field
+                label={t("promotion.form.internalName")}
+                value={state.nome_interno}
+                onChange={(v) => update({ nome_interno: v })}
+                placeholder={t("promotion.form.internalNamePlaceholder")}
+                error={errors.nome_interno}
+                defaultPlaceholder={(label) =>
+                  t("promotion.form.defaultPlaceholder", { label })
+                }
+              />
+              <div className="space-y-2">
+                <label className={labelCls}>{t("promotion.form.type")}</label>
+                <select
+                  value={state.tipo}
+                  onChange={(e) => update({ tipo: e.target.value })}
+                  className={`${inputCls} appearance-none`}
                 >
-                  <Trash2 size={12} />
-                </button>
+                  {TIPOS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {t(o.labelKey)}
+                    </option>
+                  ))}
+                </select>
               </div>
-              {uploading && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#e5c12f]">{t("common.uploading")}</span>
+              <div className="space-y-2">
+                <label className={labelCls}>{t("common.status")}</label>
+                <select
+                  value={state.status}
+                  onChange={(e) => update({ status: e.target.value })}
+                  className={`${inputCls} appearance-none`}
+                >
+                  <option value="ativo">{t("common.active")}</option>
+                  <option value="inativo">{t("common.inactive")}</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {/* Conteúdo do Modal */}
+          <section className="space-y-6">
+            <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
+              <Layers size={18} className="text-[#e5c12f]" />{" "}
+              {t("promotion.form.modalContent")}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {state.tipo === "vip_mensal" && (
+                <>
+                  <Field
+                    label={t("promotion.form.vipName")}
+                    value={state.nome}
+                    onChange={(v) => update({ nome: v })}
+                    error={errors.nome}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.vipCoupon")}
+                    value={state.cupom}
+                    onChange={(v) => update({ cupom: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <div className="md:col-span-2 space-y-2">
+                    <label className={labelCls}>
+                      {t("promotion.form.vipDescription")}
+                    </label>
+                    <textarea
+                      value={state.descricao ?? ""}
+                      onChange={(e) => update({ descricao: e.target.value })}
+                      placeholder={t("promotion.form.detailsPlaceholder")}
+                      className={`${inputCls} h-24 resize-none`}
+                    />
+                  </div>
+                  <Field
+                    label={t("promotion.form.vipValidity")}
+                    value={state.validade}
+                    onChange={(v) => update({ validade: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.vipLink")}
+                    value={state.link ?? ""}
+                    onChange={(v) => update({ link: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <div className="md:col-span-2">
+                    <Field
+                      label={t("promotion.form.vipImage")}
+                      value={state.imagem}
+                      onChange={(v) => update({ imagem: v })}
+                      trailing={
+                        <ImageUploadButton
+                          uploading={uploading}
+                          onFile={handleFile}
+                          uploadTitle={t("promotion.form.uploadImage")}
+                          uploadingTitle={t("common.uploading")}
+                        />
+                      }
+                      defaultPlaceholder={(label) =>
+                        t("promotion.form.defaultPlaceholder", { label })
+                      }
+                    />
+                  </div>
+                </>
+              )}
+
+              {state.tipo === "oferta_flash" && (
+                <>
+                  <Field
+                    label={t("promotion.form.flashTitle")}
+                    value={state.titulo}
+                    onChange={(v) => update({ titulo: v })}
+                    error={errors.titulo}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.flashSubtitle")}
+                    value={state.subtitulo}
+                    onChange={(v) => update({ subtitulo: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <div className="md:col-span-2">
+                    <Field
+                      label={t("promotion.form.flashProduct")}
+                      value={state.produto}
+                      onChange={(v) => update({ produto: v })}
+                      defaultPlaceholder={(label) =>
+                        t("promotion.form.defaultPlaceholder", { label })
+                      }
+                    />
+                  </div>
+                  <Field
+                    label={t("promotion.form.flashOldPrice")}
+                    value={state.preco_antigo}
+                    onChange={(v) => update({ preco_antigo: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.flashPrice")}
+                    value={state.preco}
+                    onChange={(v) => update({ preco: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <div className="md:col-span-2">
+                    <Field
+                      label={t("promotion.form.flashLink")}
+                      value={state.link ?? ""}
+                      onChange={(v) => update({ link: v })}
+                      defaultPlaceholder={(label) =>
+                        t("promotion.form.defaultPlaceholder", { label })
+                      }
+                    />
+                  </div>
+                  <Field
+                    label={t("promotion.form.flashDuration")}
+                    value={state.duracao}
+                    onChange={(v) => update({ duracao: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.flashImage")}
+                    value={state.imagem}
+                    onChange={(v) => update({ imagem: v })}
+                    trailing={
+                      <ImageUploadButton
+                        uploading={uploading}
+                        onFile={handleFile}
+                        uploadTitle={t("promotion.form.uploadImage")}
+                        uploadingTitle={t("common.uploading")}
+                      />
+                    }
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                </>
+              )}
+
+              {state.tipo === "battlepass" && (
+                <>
+                  <div className="md:col-span-2">
+                    <Field
+                      label={t("promotion.form.battleImage")}
+                      value={state.imagem}
+                      onChange={(v) => update({ imagem: v })}
+                      trailing={
+                        <ImageUploadButton
+                          uploading={uploading}
+                          onFile={handleFile}
+                          uploadTitle={t("promotion.form.uploadImage")}
+                          uploadingTitle={t("common.uploading")}
+                        />
+                      }
+                      defaultPlaceholder={(label) =>
+                        t("promotion.form.defaultPlaceholder", { label })
+                      }
+                    />
+                  </div>
+                  <Field
+                    label={t("promotion.form.battleName")}
+                    value={state.nome}
+                    onChange={(v) => update({ nome: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.battleButtonUrl")}
+                    value={state.link ?? ""}
+                    onChange={(v) => update({ link: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <div className="md:col-span-2 space-y-2">
+                    <label className={labelCls}>
+                      {t("promotion.form.battleDescription")}
+                    </label>
+                    <textarea
+                      value={state.descricao ?? ""}
+                      onChange={(e) => update({ descricao: e.target.value })}
+                      placeholder={t("promotion.form.detailsPlaceholder")}
+                      className={`${inputCls} h-24 resize-none`}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Field
+                      label={t("promotion.form.battleThumb")}
+                      value={state.miniatura}
+                      onChange={(v) => update({ miniatura: v })}
+                      defaultPlaceholder={(label) =>
+                        t("promotion.form.defaultPlaceholder", { label })
+                      }
+                    />
+                  </div>
+                </>
+              )}
+
+              {state.tipo === "link_exclusivo" && (
+                <div className="md:col-span-2">
+                  <Field
+                    label={t("promotion.form.linkImage")}
+                    value={state.imagem}
+                    onChange={(v) => update({ imagem: v })}
+                    trailing={
+                      <ImageUploadButton
+                        uploading={uploading}
+                        onFile={handleFile}
+                        uploadTitle={t("promotion.form.uploadImage")}
+                        uploadingTitle={t("common.uploading")}
+                      />
+                    }
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                </div>
+              )}
+
+              {state.tipo === "oferta_cidade" && (
+                <>
+                  <Field
+                    label={t("promotion.form.cityButtonText")}
+                    value={state.texto_botao}
+                    onChange={(v) => update({ texto_botao: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.cityTotalPrice")}
+                    value={state.preco_total}
+                    onChange={(v) => update({ preco_total: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.cityDiscountPrice")}
+                    value={state.preco_desconto}
+                    onChange={(v) => update({ preco_desconto: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.cityDiscountPercent")}
+                    value={state.percentual_desconto}
+                    onChange={(v) => update({ percentual_desconto: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.cityTitle")}
+                    value={state.titulo}
+                    onChange={(v) => update({ titulo: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                  <Field
+                    label={t("promotion.form.cityVideo")}
+                    value={state.video}
+                    onChange={(v) => update({ video: v })}
+                    placeholder="https://youtube.com/..."
+                  />
+                  <Field
+                    label={t("promotion.form.cityCoupon")}
+                    value={state.cupom}
+                    onChange={(v) => update({ cupom: v })}
+                    defaultPlaceholder={(label) =>
+                      t("promotion.form.defaultPlaceholder", { label })
+                    }
+                  />
+                </>
+              )}
+
+              {state.tipo === "cupom" && (
+                <>
+                  <Field
+                    label={t("promotion.form.couponCode")}
+                    value={state.cupom}
+                    onChange={(v) => update({ cupom: v.toUpperCase() })}
+                    error={errors.cupom}
+                    maxLength={64}
+                    placeholder="NOBRE"
+                  />
+                  <Field
+                    label={t("promotion.form.couponCategory")}
+                    value={state.categoria}
+                    onChange={(v) => update({ categoria: v })}
+                    error={errors.categoria}
+                    placeholder={t("promotion.form.couponCategoryPlaceholder")}
+                  />
+                  <Field
+                    label={t("promotion.form.couponDiscount")}
+                    value={state.percentual_desconto}
+                    onChange={(v) =>
+                      update({
+                        percentual_desconto: v.replace(/[^0-9.,]/g, ""),
+                      })
+                    }
+                    error={errors.percentual_desconto}
+                    type="text"
+                    placeholder="30"
+                  />
+                  <Field
+                    label={t("promotion.form.couponProductLink")}
+                    value={state.link}
+                    onChange={(v) => update({ link: v })}
+                    error={errors.link}
+                    placeholder="https://..."
+                  />
+                  <Field
+                    label={t("promotion.form.couponMinimum")}
+                    value={state.valor_minimo}
+                    onChange={(v) => update({ valor_minimo: v })}
+                    type="number"
+                    placeholder="0,00"
+                  />
+                  <Field
+                    label={t("promotion.form.couponStart")}
+                    value={state.data_inicio}
+                    onChange={(v) => update({ data_inicio: v })}
+                    type="datetime-local"
+                  />
+                  <Field
+                    label={t("promotion.form.couponExpiration")}
+                    value={state.data_expiracao}
+                    onChange={(v) => update({ data_expiracao: v })}
+                    type="datetime-local"
+                  />
+                  <div className="md:col-span-2">
+                    <Field
+                      label={t("promotion.form.couponBanner")}
+                      value={state.imagem}
+                      onChange={(v) => update({ imagem: v })}
+                      trailing={
+                        <ImageUploadButton
+                          uploading={uploading}
+                          onFile={handleFile}
+                          uploadTitle={t("promotion.form.uploadImage")}
+                          uploadingTitle={t("common.uploading")}
+                        />
+                      }
+                      placeholder="https://..."
+                    />
+                  </div>
+                </>
               )}
             </div>
-          )}
-        </section>
 
-        {/* Loja & Imagem por Cidade */}
-        <section className="space-y-6">
-          <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
-            <LinkIcon size={18} className="text-[#e5c12f]" />
-            {state.tipo === "oferta_cidade" ? t("promotion.form.storeImageByCity") : t("promotion.form.salesChannels")}
-          </h3>
-
-          {locais.length === 0 ? (
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-center text-white/50 text-sm">
-              {t("promotion.form.noCountry")}
-            </div>
-          ) : (
-            <>
-              <div className="flex bg-black rounded-lg p-1 border border-white/10 overflow-x-auto">
-                {locais.map((c) => (
+            {/* Preview thumbnail */}
+            {state.imagem && (
+              <div className="flex items-center gap-3 pt-2">
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
+                  <img
+                    src={state.imagem}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
                   <button
-                    key={c.id}
                     type="button"
-                    onClick={() => setActiveCountry(c.id)}
-                    className={`flex-1 min-w-[120px] py-3 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
-                      activeCountry === c.id
-                        ? "bg-[#e5c12f] text-black"
-                        : "text-[#a8a8a8] hover:text-white hover:bg-white/5"
-                    }`}
+                    onClick={() => update({ imagem: "" })}
+                    className="absolute top-1 right-1 p-1 rounded-md bg-black/70 text-red-400 hover:bg-red-500 hover:text-white"
                   >
-                    {c.nome}
+                    <Trash2 size={12} />
                   </button>
-                ))}
+                </div>
+                {uploading && (
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#e5c12f]">
+                    {t("common.uploading")}
+                  </span>
+                )}
               </div>
+            )}
+          </section>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {country?.cidades?.length ? (
-                  country.cidades.map((h) => {
-                    const cur = links.find((l) => l.countryId === country.id && l.cityId === h.id);
-                    const key = `${country.id}:${h.id}`;
-                    const isUp = uploadingCity === key;
-                    return (
-                      <div key={h.id} className="bg-white/5 p-4 rounded-xl space-y-3 border border-white/5">
-                        <label className="text-[10px] font-black uppercase text-[#a8a8a8] tracking-tighter opacity-70 px-1">
-                          {h.nome}
-                        </label>
-                        <input
-                          value={cur?.url || ""}
-                          onChange={(e) => upsertLink(country.id, h.id, { url: e.target.value })}
-                          placeholder={t("promotion.form.storeLinkPlaceholder")}
-                          className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
-                        />
-                        {state.tipo === "oferta_cidade" && (
-                          <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                              <input
-                                value={cur?.imagem || ""}
-                                onChange={(e) => upsertLink(country.id, h.id, { imagem: e.target.value })}
-                                placeholder={t("promotion.form.offerImagePlaceholder")}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg pl-4 pr-11 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
-                              />
-                              <label
-                                title={isUp ? t("common.uploading") : t("promotion.form.uploadImage")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer inline-flex items-center justify-center w-6 h-6 text-white/60 hover:text-[#e5c12f] transition-colors"
-                              >
-                                <Upload size={13} className={isUp ? "animate-pulse" : ""} />
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  hidden
-                                  onChange={(e) => e.target.files?.[0] && handleCityFile(country.id, h.id, e.target.files[0])}
-                                />
-                              </label>
-                            </div>
-                            {cur?.imagem && (
-                              <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
-                                <img src={cur.imagem} alt="" className="w-full h-full object-cover" />
+          {/* Loja & Imagem por Cidade */}
+          {state.tipo !== "cupom" && (
+            <section className="space-y-6">
+              <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
+                <LinkIcon size={18} className="text-[#e5c12f]" />
+                {state.tipo === "oferta_cidade"
+                  ? t("promotion.form.storeImageByCity")
+                  : t("promotion.form.salesChannels")}
+              </h3>
+
+              {locais.length === 0 ? (
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 text-center text-white/50 text-sm">
+                  {t("promotion.form.noCountry")}
+                </div>
+              ) : (
+                <>
+                  <div className="flex bg-black rounded-lg p-1 border border-white/10 overflow-x-auto">
+                    {locais.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setActiveCountry(c.id)}
+                        className={`flex-1 min-w-[120px] py-3 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
+                          activeCountry === c.id
+                            ? "bg-[#e5c12f] text-black"
+                            : "text-[#a8a8a8] hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        {c.nome}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {country?.cidades?.length ? (
+                      country.cidades.map((h) => {
+                        const cur = links.find(
+                          (l) =>
+                            l.countryId === country.id && l.cityId === h.id,
+                        );
+                        const key = `${country.id}:${h.id}`;
+                        const isUp = uploadingCity === key;
+                        return (
+                          <div
+                            key={h.id}
+                            className="bg-white/5 p-4 rounded-xl space-y-3 border border-white/5"
+                          >
+                            <label className="text-[10px] font-black uppercase text-[#a8a8a8] tracking-tighter opacity-70 px-1">
+                              {h.nome}
+                            </label>
+                            <input
+                              value={cur?.url || ""}
+                              onChange={(e) =>
+                                upsertLink(country.id, h.id, {
+                                  url: e.target.value,
+                                })
+                              }
+                              placeholder={t(
+                                "promotion.form.storeLinkPlaceholder",
+                              )}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
+                            />
+                            {state.tipo === "oferta_cidade" && (
+                              <div className="flex items-center gap-2">
+                                <div className="relative flex-1">
+                                  <input
+                                    value={cur?.imagem || ""}
+                                    onChange={(e) =>
+                                      upsertLink(country.id, h.id, {
+                                        imagem: e.target.value,
+                                      })
+                                    }
+                                    placeholder={t(
+                                      "promotion.form.offerImagePlaceholder",
+                                    )}
+                                    className="w-full bg-black/40 border border-white/10 rounded-lg pl-4 pr-11 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
+                                  />
+                                  <label
+                                    title={
+                                      isUp
+                                        ? t("common.uploading")
+                                        : t("promotion.form.uploadImage")
+                                    }
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer inline-flex items-center justify-center w-6 h-6 text-white/60 hover:text-[#e5c12f] transition-colors"
+                                  >
+                                    <Upload
+                                      size={13}
+                                      className={isUp ? "animate-pulse" : ""}
+                                    />
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      hidden
+                                      onChange={(e) =>
+                                        e.target.files?.[0] &&
+                                        handleCityFile(
+                                          country.id,
+                                          h.id,
+                                          e.target.files[0],
+                                        )
+                                      }
+                                    />
+                                  </label>
+                                </div>
+                                {cur?.imagem && (
+                                  <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-white/10 shrink-0">
+                                    <img
+                                      src={cur.imagem}
+                                      alt=""
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-white/40 text-xs sm:col-span-2">{t("promotion.form.noCities")}</p>
-                )}
-              </div>
-            </>
+                        );
+                      })
+                    ) : (
+                      <p className="text-white/40 text-xs sm:col-span-2">
+                        {t("promotion.form.noCities")}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
           )}
-        </section>
         </div>
         <div>
           <ModalPreview p={state} />
