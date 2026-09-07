@@ -2,8 +2,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Search, ChevronDown, Calendar, MapPin, X, Copy, Pencil } from "lucide-react";
-import { fetchBootstrap, sortPromocoesRecentesPrimeiro, type Local, type Promocao } from "@/lib/sghub-api";
+import {
+  Plus,
+  Search,
+  ChevronDown,
+  Calendar,
+  MapPin,
+  X,
+  Copy,
+  Pencil,
+} from "lucide-react";
+import {
+  fetchBootstrap,
+  sortPromocoesRecentesPrimeiro,
+  type Local,
+  type Promocao,
+} from "@/lib/sghub-api";
 import { useAuthSession } from "@/lib/auth-store";
 import { hasPermission } from "@/lib/permissions";
 import { useI18n } from "@/lib/i18n";
@@ -19,6 +33,7 @@ const TIPO_LABEL_KEYS: Record<string, string> = {
   link_exclusivo: "promotion.type.link_exclusivo",
   battlepass: "promotion.type.battlepass",
   oferta_cidade: "promotion.type.oferta_cidade",
+  cupom: "promotion.type.cupom",
 };
 
 const TIPO_TABS = [
@@ -28,6 +43,7 @@ const TIPO_TABS = [
   { key: "link_exclusivo", labelKey: "promotion.type.link_exclusivo" },
   { key: "battlepass", labelKey: "promotion.type.battlepass" },
   { key: "oferta_cidade", labelKey: "promotion.type.oferta_cidade" },
+  { key: "cupom", labelKey: "promotion.type.cupom" },
 ];
 
 type StatusFilter = "todos" | "ativo" | "inativo";
@@ -46,7 +62,6 @@ function HubHome() {
   const [pais, setPais] = useState<string>("todos");
   const [search, setSearch] = useState("");
   const [statusOpen, setStatusOpen] = useState(false);
-  
 
   const canView = hasPermission(session, "promocoes.ver");
   const canCreate = hasPermission(session, "promocoes.criar");
@@ -57,13 +72,15 @@ function HubHome() {
 
   const cityNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const l of locais) for (const c of l.cidades || []) map.set(c.id, c.nome);
+    for (const l of locais)
+      for (const c of l.cidades || []) map.set(c.id, c.nome);
     return map;
   }, [locais]);
 
   const cityToCountry = useMemo(() => {
     const map = new Map<string, string>();
-    for (const l of locais) for (const c of l.cidades || []) map.set(c.id, l.id);
+    for (const l of locais)
+      for (const c of l.cidades || []) map.set(c.id, l.id);
     return map;
   }, [locais]);
 
@@ -79,12 +96,14 @@ function HubHome() {
   const filtered = useMemo(() => {
     const sorted = sortPromocoesRecentesPrimeiro(promocoes);
     return sorted.filter((p) => {
-      if (status !== "todos" && (p.status || "").toLowerCase() !== status) return false;
+      if (status !== "todos" && (p.status || "").toLowerCase() !== status)
+        return false;
       if (tipo !== "todos" && p.tipo !== tipo) return false;
       if (pais !== "todos" && !promoCountries(p).has(pais)) return false;
       if (search) {
         const q = search.toLowerCase();
-        const hay = `${p.nome || ""} ${p.nome_interno || ""} ${p.tipo || ""} ${t(TIPO_LABEL_KEYS[p.tipo] || "")}`.toLowerCase();
+        const hay =
+          `${p.nome || ""} ${p.nome_interno || ""} ${p.tipo || ""} ${t(TIPO_LABEL_KEYS[p.tipo] || "")}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -92,7 +111,9 @@ function HubHome() {
   }, [promocoes, status, tipo, pais, search, cityToCountry]);
 
   const countsByTipo = useMemo(() => {
-    const base = promocoes.filter((p) => status === "todos" || (p.status || "").toLowerCase() === status);
+    const base = promocoes.filter(
+      (p) => status === "todos" || (p.status || "").toLowerCase() === status,
+    );
     const counts: Record<string, number> = { todos: base.length };
     for (const p of base) counts[p.tipo] = (counts[p.tipo] || 0) + 1;
     return counts;
@@ -101,22 +122,23 @@ function HubHome() {
   // Países disponíveis considerando tipo + status atuais
   const paisesDisponiveis = useMemo(() => {
     const base = promocoes.filter((p) => {
-      if (status !== "todos" && (p.status || "").toLowerCase() !== status) return false;
+      if (status !== "todos" && (p.status || "").toLowerCase() !== status)
+        return false;
       if (tipo !== "todos" && p.tipo !== tipo) return false;
       return true;
     });
     const counts: Record<string, number> = {};
-    for (const p of base) for (const cid of promoCountries(p)) counts[cid] = (counts[cid] || 0) + 1;
+    for (const p of base)
+      for (const cid of promoCountries(p)) counts[cid] = (counts[cid] || 0) + 1;
     return locais
       .filter((l) => counts[l.id])
       .map((l) => ({ id: l.id, nome: l.nome, count: counts[l.id] }));
   }, [promocoes, locais, status, tipo, cityToCountry]);
 
   useEffect(() => {
-    if (pais !== "todos" && !paisesDisponiveis.some((p) => p.id === pais)) setPais("todos");
+    if (pais !== "todos" && !paisesDisponiveis.some((p) => p.id === pais))
+      setPais("todos");
   }, [pais, paisesDisponiveis]);
-
-
 
   return (
     <div className="px-6 lg:px-12 py-10 lg:py-14 pt-20 lg:pt-14 max-w-[1400px] mx-auto">
@@ -149,146 +171,201 @@ function HubHome() {
       )}
 
       {canView && (
-      <>
+        <>
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40"
+              size={18}
+            />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("home.searchPlaceholder")}
+              className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-white/40 outline-none focus:border-[#d4af37]/50 focus:bg-white/[0.05] transition-all"
+            />
+          </div>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40" size={18} />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("home.searchPlaceholder")}
-          className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder-white/40 outline-none focus:border-[#d4af37]/50 focus:bg-white/[0.05] transition-all"
-        />
-      </div>
-
-      {/* Tabs + Status selector */}
-      <div className="flex flex-wrap items-center gap-2 mb-8">
-        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-          {TIPO_TABS.map((tab) => {
-            const active = tipo === tab.key;
-            const count = countsByTipo[tab.key] || 0;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setTipo(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all
-                  ${active
-                    ? "bg-[#d4af37] text-black shadow-[0_0_15px_rgba(212,175,55,0.25)]"
-                    : "bg-white/[0.03] border border-white/10 text-white/60 hover:text-white hover:border-white/20"}`}
-              >
-                <span>{t(tab.labelKey)}</span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] ${active ? "bg-black/20 text-black" : "bg-white/5 text-white/40"}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Status dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setStatusOpen((v) => !v)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white/[0.03] border border-white/10 text-white/80 hover:border-[#d4af37]/40 transition-all"
-          >
-            <span className="text-white/40">{t("common.status")}:</span>
-            <span className="text-[#d4af37]">
-              {status === "todos" ? t("common.all") : status === "ativo" ? t("common.active") : t("common.inactive")}
-            </span>
-            <ChevronDown size={14} className={`transition-transform ${statusOpen ? "rotate-180" : ""}`} />
-          </button>
-          {statusOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setStatusOpen(false)} />
-              <div className="absolute right-0 mt-2 w-44 rounded-xl bg-[#0f0f0f] border border-white/10 shadow-2xl overflow-hidden z-50">
-                {(["todos", "ativo", "inativo"] as StatusFilter[]).map((opt) => (
+          {/* Tabs + Status selector */}
+          <div className="flex flex-wrap items-center gap-2 mb-8">
+            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+              {TIPO_TABS.map((tab) => {
+                const active = tipo === tab.key;
+                const count = countsByTipo[tab.key] || 0;
+                return (
                   <button
-                    key={opt}
-                    onClick={() => { setStatus(opt); setStatusOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors
-                      ${status === opt ? "text-[#d4af37] bg-white/5" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+                    key={tab.key}
+                    onClick={() => setTipo(tab.key)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all
+                  ${
+                    active
+                      ? "bg-[#d4af37] text-black shadow-[0_0_15px_rgba(212,175,55,0.25)]"
+                      : "bg-white/[0.03] border border-white/10 text-white/60 hover:text-white hover:border-white/20"
+                  }`}
                   >
-                    <span className={`w-2 h-2 rounded-full ${status === opt ? "bg-[#d4af37]" : "bg-white/20"}`} />
-                    <span className="capitalize">{opt === "todos" ? t("common.all") : opt === "ativo" ? t("common.active") : t("common.inactive")}</span>
+                    <span>{t(tab.labelKey)}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] ${active ? "bg-black/20 text-black" : "bg-white/5 text-white/40"}`}
+                    >
+                      {count}
+                    </span>
                   </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+                );
+              })}
+            </div>
 
-      {/* País tabs */}
-      {paisesDisponiveis.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-8 -mt-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mr-1">{t("common.country")}:</span>
-          <button
-            onClick={() => setPais("todos")}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all
-              ${pais === "todos"
-                ? "bg-[#d4af37]/15 border border-[#d4af37]/50 text-[#f9e29f]"
-                : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white hover:border-white/20"}`}
-          >
-            {t("common.all")}
-          </button>
-          {paisesDisponiveis.map((p) => {
-            const active = pais === p.id;
-            return (
+            {/* Status dropdown */}
+            <div className="relative">
               <button
-                key={p.id}
-                onClick={() => setPais(p.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all
-                  ${active
-                    ? "bg-[#d4af37]/15 border border-[#d4af37]/50 text-[#f9e29f]"
-                    : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white hover:border-white/20"}`}
+                onClick={() => setStatusOpen((v) => !v)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white/[0.03] border border-white/10 text-white/80 hover:border-[#d4af37]/40 transition-all"
               >
-                <span>{p.nome}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[9px] ${active ? "bg-black/30 text-[#f9e29f]" : "bg-white/5 text-white/40"}`}>
-                  {p.count}
+                <span className="text-white/40">{t("common.status")}:</span>
+                <span className="text-[#d4af37]">
+                  {status === "todos"
+                    ? t("common.all")
+                    : status === "ativo"
+                      ? t("common.active")
+                      : t("common.inactive")}
                 </span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${statusOpen ? "rotate-180" : ""}`}
+                />
               </button>
-            );
-          })}
-        </div>
-      )}
+              {statusOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setStatusOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-44 rounded-xl bg-[#0f0f0f] border border-white/10 shadow-2xl overflow-hidden z-50">
+                    {(["todos", "ativo", "inativo"] as StatusFilter[]).map(
+                      (opt) => (
+                        <button
+                          key={opt}
+                          onClick={() => {
+                            setStatus(opt);
+                            setStatusOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors
+                      ${status === opt ? "text-[#d4af37] bg-white/5" : "text-white/70 hover:bg-white/5 hover:text-white"}`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${status === opt ? "bg-[#d4af37]" : "bg-white/20"}`}
+                          />
+                          <span className="capitalize">
+                            {opt === "todos"
+                              ? t("common.all")
+                              : opt === "ativo"
+                                ? t("common.active")
+                                : t("common.inactive")}
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
 
-      {/* Grid */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-20 text-white/40 text-sm uppercase tracking-widest">
-          {t("home.loadingPromotions")}
-        </div>
-      )}
-      {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-red-300">
-          {t("home.loadError", { message: (error as Error).message })}
-        </div>
-      )}
-      {!isLoading && !error && filtered.length === 0 && (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center text-white/40">
-          {t("home.empty")}
-        </div>
-      )}
+          {/* País tabs */}
+          {paisesDisponiveis.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-8 -mt-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mr-1">
+                {t("common.country")}:
+              </span>
+              <button
+                onClick={() => setPais("todos")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all
+              ${
+                pais === "todos"
+                  ? "bg-[#d4af37]/15 border border-[#d4af37]/50 text-[#f9e29f]"
+                  : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white hover:border-white/20"
+              }`}
+              >
+                {t("common.all")}
+              </button>
+              {paisesDisponiveis.map((p) => {
+                const active = pais === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setPais(p.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all
+                  ${
+                    active
+                      ? "bg-[#d4af37]/15 border border-[#d4af37]/50 text-[#f9e29f]"
+                      : "bg-white/[0.02] border border-white/10 text-white/50 hover:text-white hover:border-white/20"
+                  }`}
+                  >
+                    <span>{p.nome}</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[9px] ${active ? "bg-black/30 text-[#f9e29f]" : "bg-white/5 text-white/40"}`}
+                    >
+                      {p.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filtered.map((p) => (
-          <PromocaoCard key={p.id} promocao={p} cityNameById={cityNameById} canEdit={canEdit} />
-        ))}
-      </div>
-      </>
-      )}
+          {/* Grid */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-20 text-white/40 text-sm uppercase tracking-widest">
+              {t("home.loadingPromotions")}
+            </div>
+          )}
+          {error && (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6 text-red-300">
+              {t("home.loadError", { message: (error as Error).message })}
+            </div>
+          )}
+          {!isLoading && !error && filtered.length === 0 && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-12 text-center text-white/40">
+              {t("home.empty")}
+            </div>
+          )}
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((p) => (
+              <PromocaoCard
+                key={p.id}
+                promocao={p}
+                cityNameById={cityNameById}
+                canEdit={canEdit}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao; cityNameById: Map<string, string>; canEdit: boolean }) {
+function PromocaoCard({
+  promocao,
+  cityNameById,
+  canEdit,
+}: {
+  promocao: Promocao;
+  cityNameById: Map<string, string>;
+  canEdit: boolean;
+}) {
   const { t, formatDate } = useI18n();
   const status = (promocao.status || "").toLowerCase();
   const isAtivo = status === "ativo";
-  const tipoLabel = TIPO_LABEL_KEYS[promocao.tipo] ? t(TIPO_LABEL_KEYS[promocao.tipo]) : promocao.tipo?.toUpperCase() || "—";
+  const tipoLabel = TIPO_LABEL_KEYS[promocao.tipo]
+    ? t(TIPO_LABEL_KEYS[promocao.tipo])
+    : promocao.tipo?.toUpperCase() || "—";
   const cidades = Array.from(
-    new Set((promocao.links_por_cidade || []).map((l) => cityNameById.get(l.cityId) || l.cityId))
+    new Set(
+      (promocao.links_por_cidade || []).map(
+        (l) => cityNameById.get(l.cityId) || l.cityId,
+      ),
+    ),
   );
   const cidadesCount = cidades.length;
 
@@ -301,13 +378,18 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
   return (
     <article
       className={`group relative flex flex-col rounded-2xl border p-5 backdrop-blur-sm transition-all shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden
-        ${isAtivo
-          ? "border-white/10 bg-[#0d0d0d]/70 hover:border-[#d4af37]/40 hover:bg-[#111]/80"
-          : "border-red-500/40 bg-[#170a0a]/70 hover:border-red-500/70 hover:bg-[#1a0c0c]/80"}`}
+        ${
+          isAtivo
+            ? "border-white/10 bg-[#0d0d0d]/70 hover:border-[#d4af37]/40 hover:bg-[#111]/80"
+            : "border-red-500/40 bg-[#170a0a]/70 hover:border-red-500/70 hover:bg-[#1a0c0c]/80"
+        }`}
     >
       {/* Background image (transparent, decorative) */}
       {bgImage && (
-        <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+        <div
+          className="pointer-events-none absolute inset-0 z-0"
+          aria-hidden="true"
+        >
           <img
             src={bgImage}
             alt=""
@@ -343,7 +425,10 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
       {cidades.length > 0 && (
         <div className="relative z-10 flex flex-wrap gap-1.5 mb-4">
           {cidades.slice(0, 6).map((c) => (
-            <span key={c} className="px-2.5 py-1 rounded-md bg-[#d4af37]/10 border border-[#d4af37]/25 text-[10px] font-bold uppercase tracking-wide text-[#f9e29f]">
+            <span
+              key={c}
+              className="px-2.5 py-1 rounded-md bg-[#d4af37]/10 border border-[#d4af37]/25 text-[10px] font-bold uppercase tracking-wide text-[#f9e29f]"
+            >
               {c}
             </span>
           ))}
@@ -355,7 +440,6 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
         </div>
       )}
 
-
       <div className="relative z-10 mt-auto pt-4 border-t border-white/5">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="flex items-center gap-3 min-w-0 text-[11px] text-white/50">
@@ -365,16 +449,26 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
             </span>
             <span className="flex items-center gap-1.5 shrink-0">
               <MapPin size={12} className="text-white/40" />
-              {cidadesCount} {cidadesCount === 1 ? t("common.citySingular") : t("common.cities")}
+              {cidadesCount}{" "}
+              {cidadesCount === 1
+                ? t("common.citySingular")
+                : t("common.cities")}
             </span>
           </div>
-          <Link to="/hub/detalhes/$id" params={{ id: promocao.id }} className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[#d4af37] group-hover:text-[#f9e29f] transition-colors">
+          <Link
+            to="/hub/detalhes/$id"
+            params={{ id: promocao.id }}
+            className="shrink-0 text-[10px] font-black uppercase tracking-widest text-[#d4af37] group-hover:text-[#f9e29f] transition-colors"
+          >
             {t("home.viewDetails")}
           </Link>
-
         </div>
         {canEdit && (
-          <Link to="/hub/promocoes/$id" params={{ id: promocao.id }} className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/60 hover:border-[#d4af37]/40 hover:text-[#f9e29f]">
+          <Link
+            to="/hub/promocoes/$id"
+            params={{ id: promocao.id }}
+            className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-white/60 hover:border-[#d4af37]/40 hover:text-[#f9e29f]"
+          >
             <Pencil size={12} /> {t("common.edit")}
           </Link>
         )}
@@ -384,9 +478,11 @@ function PromocaoCard({ promocao, cityNameById, canEdit }: { promocao: Promocao;
       <span
         className={`absolute top-4 right-4 z-10 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border
 
-          ${isAtivo
-            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-            : "bg-red-500/15 border-red-500/50 text-red-300"}`}
+          ${
+            isAtivo
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+              : "bg-red-500/15 border-red-500/50 text-red-300"
+          }`}
       >
         {isAtivo ? t("common.active") : t("common.inactive")}
       </span>
@@ -398,35 +494,95 @@ function fieldLine(label: string, value?: string) {
   return `${label}: ${value || "—"}`;
 }
 
-function buildPromoLines(p: Promocao, cityName: string, cityUrl: string, t: (key: string) => string) {
+function buildPromoLines(
+  p: Promocao,
+  cityName: string,
+  cityUrl: string,
+  t: (key: string) => string,
+) {
   const tipo = p.tipo || "vip_mensal";
-  if (tipo === "oferta_flash") return [
-    fieldLine(t("common.city"), cityName), fieldLine(t("common.title"), p.titulo), fieldLine(t("common.subtitle"), p.subtitulo), fieldLine(t("common.product"), p.produto),
-    fieldLine(t("promotion.field.oldPrice"), p.preco_antigo), fieldLine(t("promotion.field.price"), p.preco), fieldLine(t("common.link"), cityUrl || p.link), fieldLine(t("common.duration"), p.duracao), fieldLine(t("common.image"), p.imagem),
-  ];
-  if (tipo === "battlepass") return [
-    fieldLine(t("common.city"), cityName), fieldLine(t("promotion.form.battleImage"), p.imagem), fieldLine(t("promotion.form.battleName"), p.nome), fieldLine(t("promotion.form.battleButtonUrl"), cityUrl || p.link),
-    fieldLine(t("promotion.form.battleDescription"), p.descricao), fieldLine(t("promotion.form.battleThumb"), p.miniatura),
-  ];
-  if (tipo === "oferta_cidade") return [
-    fieldLine(t("common.city"), cityName), fieldLine(t("common.image"), p.imagem), fieldLine(t("promotion.field.buttonText"), p.texto_botao), fieldLine(t("promotion.field.totalPrice"), p.preco_total),
-    fieldLine(t("promotion.field.discountPrice"), p.preco_desconto), fieldLine(t("promotion.field.discountPercent"), p.percentual_desconto), fieldLine(t("common.title"), p.titulo), fieldLine(t("promotion.field.video"), p.video), fieldLine(t("common.link"), cityUrl), fieldLine(t("common.coupon"), p.cupom),
-  ];
-  if (tipo === "link_exclusivo") return [fieldLine(t("common.city"), cityName), fieldLine(t("common.image"), p.imagem), fieldLine(t("common.link"), cityUrl || p.link)];
+  if (tipo === "oferta_flash")
+    return [
+      fieldLine(t("common.city"), cityName),
+      fieldLine(t("common.title"), p.titulo),
+      fieldLine(t("common.subtitle"), p.subtitulo),
+      fieldLine(t("common.product"), p.produto),
+      fieldLine(t("promotion.field.oldPrice"), p.preco_antigo),
+      fieldLine(t("promotion.field.price"), p.preco),
+      fieldLine(t("common.link"), cityUrl || p.link),
+      fieldLine(t("common.duration"), p.duracao),
+      fieldLine(t("common.image"), p.imagem),
+    ];
+  if (tipo === "battlepass")
+    return [
+      fieldLine(t("common.city"), cityName),
+      fieldLine(t("promotion.form.battleImage"), p.imagem),
+      fieldLine(t("promotion.form.battleName"), p.nome),
+      fieldLine(t("promotion.form.battleButtonUrl"), cityUrl || p.link),
+      fieldLine(t("promotion.form.battleDescription"), p.descricao),
+      fieldLine(t("promotion.form.battleThumb"), p.miniatura),
+    ];
+  if (tipo === "oferta_cidade")
+    return [
+      fieldLine(t("common.city"), cityName),
+      fieldLine(t("common.image"), p.imagem),
+      fieldLine(t("promotion.field.buttonText"), p.texto_botao),
+      fieldLine(t("promotion.field.totalPrice"), p.preco_total),
+      fieldLine(t("promotion.field.discountPrice"), p.preco_desconto),
+      fieldLine(t("promotion.field.discountPercent"), p.percentual_desconto),
+      fieldLine(t("common.title"), p.titulo),
+      fieldLine(t("promotion.field.video"), p.video),
+      fieldLine(t("common.link"), cityUrl),
+      fieldLine(t("common.coupon"), p.cupom),
+    ];
+  if (tipo === "link_exclusivo")
+    return [
+      fieldLine(t("common.city"), cityName),
+      fieldLine(t("common.image"), p.imagem),
+      fieldLine(t("common.link"), cityUrl || p.link),
+    ];
+  if (tipo === "cupom")
+    return [
+      fieldLine(t("common.city"), cityName),
+      fieldLine(t("common.coupon"), p.cupom),
+      fieldLine(t("promotion.field.category"), p.categoria),
+      fieldLine(t("promotion.field.discountPercent"), p.percentual_desconto),
+      fieldLine(t("common.link"), cityUrl || p.link),
+      fieldLine(t("promotion.field.minimumPurchase"), p.valor_minimo),
+      fieldLine(t("promotion.field.startDate"), p.data_inicio),
+      fieldLine(t("promotion.field.expirationDate"), p.data_expiracao),
+      fieldLine(t("common.image"), p.imagem),
+    ];
   return [
-    fieldLine(t("common.city"), cityName), fieldLine(t("common.name"), p.nome), fieldLine(t("common.coupon"), p.cupom), fieldLine(t("common.description"), p.descricao),
-    fieldLine(t("common.validity"), p.validade), fieldLine(t("common.link"), cityUrl || p.link), fieldLine(t("common.image"), p.imagem),
+    fieldLine(t("common.city"), cityName),
+    fieldLine(t("common.name"), p.nome),
+    fieldLine(t("common.coupon"), p.cupom),
+    fieldLine(t("common.description"), p.descricao),
+    fieldLine(t("common.validity"), p.validade),
+    fieldLine(t("common.link"), cityUrl || p.link),
+    fieldLine(t("common.image"), p.imagem),
   ];
 }
 
-function DetalhesModal({ promocao, locais, onClose }: { promocao: Promocao; locais: Local[]; onClose: () => void }) {
+function DetalhesModal({
+  promocao,
+  locais,
+  onClose,
+}: {
+  promocao: Promocao;
+  locais: Local[];
+  onClose: () => void;
+}) {
   const { t } = useI18n();
   const cityNames = useMemo(() => {
     const map = new Map<string, string>();
-    for (const pais of locais) for (const cidade of pais.cidades || []) map.set(cidade.id, cidade.nome);
+    for (const pais of locais)
+      for (const cidade of pais.cidades || []) map.set(cidade.id, cidade.nome);
     return map;
   }, [locais]);
-  const links = promocao.links_por_cidade?.length ? promocao.links_por_cidade : [{ countryId: "", cityId: "", url: promocao.link || "" }];
+  const links = promocao.links_por_cidade?.length
+    ? promocao.links_por_cidade
+    : [{ countryId: "", cityId: "", url: promocao.link || "" }];
 
   const copy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -434,31 +590,63 @@ function DetalhesModal({ promocao, locais, onClose }: { promocao: Promocao; loca
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 px-4 py-8 backdrop-blur-sm" onClick={onClose}>
-      <div className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b0b] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 px-4 py-8 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b0b] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-4 border-b border-white/10 p-5">
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">{TIPO_LABEL_KEYS[promocao.tipo] ? t(TIPO_LABEL_KEYS[promocao.tipo]) : promocao.tipo}</p>
-            <h2 className="mt-1 break-words font-display text-2xl font-black text-white">{promocao.nome_interno || promocao.nome || promocao.titulo || t("common.details")}</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#d4af37]">
+              {TIPO_LABEL_KEYS[promocao.tipo]
+                ? t(TIPO_LABEL_KEYS[promocao.tipo])
+                : promocao.tipo}
+            </p>
+            <h2 className="mt-1 break-words font-display text-2xl font-black text-white">
+              {promocao.nome_interno ||
+                promocao.nome ||
+                promocao.titulo ||
+                t("common.details")}
+            </h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-white/50 hover:bg-white/5 hover:text-white" aria-label={t("common.close")}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-white/50 hover:bg-white/5 hover:text-white"
+            aria-label={t("common.close")}
+          >
             <X size={20} />
           </button>
         </div>
         <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
           {links.map((link, idx) => {
-            const cityName = cityNames.get(link.cityId) || link.cityId || `${t("common.city")} ${idx + 1}`;
+            const cityName =
+              cityNames.get(link.cityId) ||
+              link.cityId ||
+              `${t("common.city")} ${idx + 1}`;
             const lines = buildPromoLines(promocao, cityName, link.url, t);
             const text = lines.join("\n");
             return (
-              <section key={`${link.countryId}-${link.cityId}-${idx}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <section
+                key={`${link.countryId}-${link.cityId}-${idx}`}
+                className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+              >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className="font-black text-white">{cityName}</h3>
-                  <button type="button" onClick={() => copy(text)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:brightness-110">
+                  <button
+                    type="button"
+                    onClick={() => copy(text)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:brightness-110"
+                  >
                     <Copy size={13} /> {t("common.copy")}
                   </button>
                 </div>
-                <pre className="whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black/60 p-4 font-mono text-xs leading-relaxed text-white/75">{text}</pre>
+                <pre className="whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black/60 p-4 font-mono text-xs leading-relaxed text-white/75">
+                  {text}
+                </pre>
               </section>
             );
           })}

@@ -20,47 +20,66 @@ const TIPO_LABEL_KEYS: Record<string, string> = {
   link_exclusivo: "promotion.type.link_exclusivo",
   battlepass: "promotion.type.battlepass",
   oferta_cidade: "promotion.type.oferta_cidade",
+  cupom: "promotion.type.cupom",
 };
 
 type Field = { label: string; value: string; isImage?: boolean };
 
-function fieldsFor(p: Promocao, t: (key: string, vars?: Record<string, string | number>) => string): Field[] {
+function fieldsFor(
+  p: Promocao,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): Field[] {
   const v = (x?: string) => (x && String(x).trim() ? String(x) : "");
   const tipo = p.tipo || "vip_mensal";
-  const suffix = TIPO_LABEL_KEYS[tipo] ? t(TIPO_LABEL_KEYS[tipo]) : tipo.toUpperCase();
+  const suffix = TIPO_LABEL_KEYS[tipo]
+    ? t(TIPO_LABEL_KEYS[tipo])
+    : tipo.toUpperCase();
   const f = (base: string, value: string, isImage = false): Field => ({
     label: `${base} - ${suffix}`,
     value,
     isImage,
   });
 
-  if (tipo === "oferta_flash") return [
-    f(t("common.title"), v(p.titulo)),
-    f(t("common.subtitle"), v(p.subtitulo)),
-    f(t("common.product"), v(p.produto)),
-    f(t("promotion.field.oldPrice"), v(p.preco_antigo)),
-    f(t("promotion.field.price"), v(p.preco)),
-    f(t("common.duration"), v(p.duracao)),
-    f(t("common.image"), v(p.imagem), true),
-  ];
-  if (tipo === "battlepass") return [
-    f(t("common.name"), v(p.nome)),
-    f(t("common.description"), v(p.descricao)),
-    f(t("common.image"), v(p.imagem), true),
-    f(t("promotion.field.thumbnail"), v(p.miniatura), true),
-  ];
-  if (tipo === "oferta_cidade") return [
-    f(t("promotion.field.buttonText"), v(p.texto_botao)),
-    f(t("promotion.field.totalPrice"), v(p.preco_total)),
-    f(t("promotion.field.discountPrice"), v(p.preco_desconto)),
-    f(t("promotion.field.discountPercent"), v(p.percentual_desconto)),
-    f(t("common.title"), v(p.titulo)),
-    f(t("promotion.field.video"), v(p.video)),
-    f(t("common.coupon"), v(p.cupom)),
-  ];
-  if (tipo === "link_exclusivo") return [
-    f(t("common.image"), v(p.imagem), true),
-  ];
+  if (tipo === "oferta_flash")
+    return [
+      f(t("common.title"), v(p.titulo)),
+      f(t("common.subtitle"), v(p.subtitulo)),
+      f(t("common.product"), v(p.produto)),
+      f(t("promotion.field.oldPrice"), v(p.preco_antigo)),
+      f(t("promotion.field.price"), v(p.preco)),
+      f(t("common.duration"), v(p.duracao)),
+      f(t("common.image"), v(p.imagem), true),
+    ];
+  if (tipo === "battlepass")
+    return [
+      f(t("common.name"), v(p.nome)),
+      f(t("common.description"), v(p.descricao)),
+      f(t("common.image"), v(p.imagem), true),
+      f(t("promotion.field.thumbnail"), v(p.miniatura), true),
+    ];
+  if (tipo === "oferta_cidade")
+    return [
+      f(t("promotion.field.buttonText"), v(p.texto_botao)),
+      f(t("promotion.field.totalPrice"), v(p.preco_total)),
+      f(t("promotion.field.discountPrice"), v(p.preco_desconto)),
+      f(t("promotion.field.discountPercent"), v(p.percentual_desconto)),
+      f(t("common.title"), v(p.titulo)),
+      f(t("promotion.field.video"), v(p.video)),
+      f(t("common.coupon"), v(p.cupom)),
+    ];
+  if (tipo === "link_exclusivo")
+    return [f(t("common.image"), v(p.imagem), true)];
+  if (tipo === "cupom")
+    return [
+      f(t("common.coupon"), v(p.cupom)),
+      f(t("promotion.field.category"), v(p.categoria)),
+      f(t("promotion.field.discountPercent"), v(p.percentual_desconto)),
+      f(t("common.link"), v(p.link)),
+      f(t("promotion.field.minimumPurchase"), v(p.valor_minimo)),
+      f(t("promotion.field.startDate"), v(p.data_inicio)),
+      f(t("promotion.field.expirationDate"), v(p.data_expiracao)),
+      f(t("common.image"), v(p.imagem), true),
+    ];
   return [
     f(t("common.name"), v(p.nome)),
     f(t("common.coupon"), v(p.cupom)),
@@ -70,7 +89,15 @@ function fieldsFor(p: Promocao, t: (key: string, vars?: Record<string, string | 
   ];
 }
 
-function CopyButton({ text, label, disabled }: { text: string; label?: string; disabled?: boolean }) {
+function CopyButton({
+  text,
+  label,
+  disabled,
+}: {
+  text: string;
+  label?: string;
+  disabled?: boolean;
+}) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const onClick = async () => {
@@ -126,7 +153,8 @@ function DetalhesPage() {
 
   const cityNames = useMemo(() => {
     const map = new Map<string, string>();
-    for (const pais of data?.locais || []) for (const c of pais.cidades || []) map.set(c.id, c.nome);
+    for (const pais of data?.locais || [])
+      for (const c of pais.cidades || []) map.set(c.id, c.nome);
     return map;
   }, [data]);
 
@@ -138,17 +166,23 @@ function DetalhesPage() {
 
   const cityToCountry = useMemo(() => {
     const map = new Map<string, string>();
-    for (const pais of data?.locais || []) for (const c of pais.cidades || []) map.set(c.id, pais.id);
+    for (const pais of data?.locais || [])
+      for (const c of pais.cidades || []) map.set(c.id, pais.id);
     return map;
   }, [data]);
 
   const linksByCountry = useMemo(() => {
     const links = promocao?.links_por_cidade || [];
-    const groups = new Map<string, { url: string; cityId: string; imagem?: string }[]>();
+    const groups = new Map<
+      string,
+      { url: string; cityId: string; imagem?: string }[]
+    >();
     for (const l of links) {
       const cid = l.countryId || cityToCountry.get(l.cityId) || "outros";
       if (!groups.has(cid)) groups.set(cid, []);
-      groups.get(cid)!.push({ url: l.url || "", cityId: l.cityId, imagem: l.imagem || "" });
+      groups
+        .get(cid)!
+        .push({ url: l.url || "", cityId: l.cityId, imagem: l.imagem || "" });
     }
     return Array.from(groups.entries());
   }, [promocao, cityToCountry]);
@@ -163,15 +197,26 @@ function DetalhesPage() {
     );
   }
   if (isLoading) {
-    return <div className="p-10 text-center text-white/40 text-sm uppercase tracking-widest">{t("details.loading")}</div>;
+    return (
+      <div className="p-10 text-center text-white/40 text-sm uppercase tracking-widest">
+        {t("details.loading")}
+      </div>
+    );
   }
   if (error) {
-    return <div className="p-6 text-red-300">{t("details.error", { message: (error as Error).message })}</div>;
+    return (
+      <div className="p-6 text-red-300">
+        {t("details.error", { message: (error as Error).message })}
+      </div>
+    );
   }
   if (!promocao) {
     return (
       <div className="mx-auto max-w-3xl p-6">
-        <Link to="/hub" className="mb-4 inline-flex items-center gap-2 text-white/60 hover:text-white text-xs font-black uppercase tracking-widest">
+        <Link
+          to="/hub"
+          className="mb-4 inline-flex items-center gap-2 text-white/60 hover:text-white text-xs font-black uppercase tracking-widest"
+        >
           <ArrowLeft size={14} /> {t("common.back")}
         </Link>
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-10 text-center text-white/50">
@@ -183,10 +228,15 @@ function DetalhesPage() {
 
   const status = (promocao.status || "").toLowerCase();
   const isAtivo = status === "ativo";
-  const tipoLabel = TIPO_LABEL_KEYS[promocao.tipo] ? t(TIPO_LABEL_KEYS[promocao.tipo]) : (promocao.tipo || "").toUpperCase();
-  const title = promocao.nome_interno || promocao.nome || promocao.titulo || t("common.details");
+  const tipoLabel = TIPO_LABEL_KEYS[promocao.tipo]
+    ? t(TIPO_LABEL_KEYS[promocao.tipo])
+    : (promocao.tipo || "").toUpperCase();
+  const title =
+    promocao.nome_interno ||
+    promocao.nome ||
+    promocao.titulo ||
+    t("common.details");
   const fields = fieldsFor(promocao, t);
-
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
@@ -282,7 +332,8 @@ function DetalhesPage() {
 
           <div className="space-y-8">
             {linksByCountry.map(([countryId, cities]) => {
-              const countryName = countryNames.get(countryId) || countryId || t("details.other");
+              const countryName =
+                countryNames.get(countryId) || countryId || t("details.other");
               return (
                 <div key={countryId}>
                   <div className="mb-3 flex items-center gap-2">
@@ -293,7 +344,10 @@ function DetalhesPage() {
                   </div>
                   <div className="space-y-3">
                     {cities.map((c, i) => {
-                      const cityName = cityNames.get(c.cityId) || c.cityId || `${t("common.city")} ${i + 1}`;
+                      const cityName =
+                        cityNames.get(c.cityId) ||
+                        c.cityId ||
+                        `${t("common.city")} ${i + 1}`;
                       return (
                         <div
                           key={`${c.cityId}-${i}`}
@@ -304,26 +358,48 @@ function DetalhesPage() {
                           </div>
                           <div className="grid grid-cols-[1fr_auto] items-center gap-2">
                             <span className="min-w-0 truncate rounded-md bg-black/40 px-3 py-1.5 font-mono text-[11px] text-white/70">
-                              {c.url || <span className="text-white/25">{t("details.storeLinkEmpty")}</span>}
+                              {c.url || (
+                                <span className="text-white/25">
+                                  {t("details.storeLinkEmpty")}
+                                </span>
+                              )}
                             </span>
-                            <CopyButton text={c.url} label={t("common.copyLink")} disabled={!c.url} />
+                            <CopyButton
+                              text={c.url}
+                              label={t("common.copyLink")}
+                              disabled={!c.url}
+                            />
                           </div>
                           {promocao.tipo === "oferta_cidade" && (
                             <div className="grid grid-cols-[64px_1fr_auto] items-center gap-2">
                               {c.imagem ? (
                                 <img
                                   src={c.imagem}
-                                  alt={t("details.imageAlt", { name: cityName })}
+                                  alt={t("details.imageAlt", {
+                                    name: cityName,
+                                  })}
                                   className="h-14 w-14 rounded-lg border border-white/10 object-cover bg-black/40"
-                                  onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
+                                  onError={(e) => {
+                                    (
+                                      e.target as HTMLImageElement
+                                    ).style.opacity = "0.2";
+                                  }}
                                 />
                               ) : (
                                 <div className="h-14 w-14 rounded-lg border border-white/10 bg-black/40" />
                               )}
                               <span className="min-w-0 truncate rounded-md bg-black/40 px-3 py-1.5 font-mono text-[11px] text-white/70">
-                                {c.imagem || <span className="text-white/25">{t("details.offerImageEmpty")}</span>}
+                                {c.imagem || (
+                                  <span className="text-white/25">
+                                    {t("details.offerImageEmpty")}
+                                  </span>
+                                )}
                               </span>
-                              <CopyButton text={c.imagem || ""} label={t("common.copyImage")} disabled={!c.imagem} />
+                              <CopyButton
+                                text={c.imagem || ""}
+                                label={t("common.copyImage")}
+                                disabled={!c.imagem}
+                              />
                             </div>
                           )}
                         </div>
@@ -338,14 +414,15 @@ function DetalhesPage() {
       )}
 
       {/* Preview por cidade (Oferta da Cidade) */}
-      {promocao.tipo === "oferta_cidade" && (promocao.links_por_cidade || []).length > 0 && (
-        <PreviewPorCidade
-          promocao={promocao}
-          cityNames={cityNames}
-          countryNames={countryNames}
-          cityToCountry={cityToCountry}
-        />
-      )}
+      {promocao.tipo === "oferta_cidade" &&
+        (promocao.links_por_cidade || []).length > 0 && (
+          <PreviewPorCidade
+            promocao={promocao}
+            cityNames={cityNames}
+            countryNames={countryNames}
+            cityToCountry={cityToCountry}
+          />
+        )}
     </div>
   );
 }
@@ -365,8 +442,12 @@ function PreviewPorCidade({
   const { t } = useI18n();
   const [selected, setSelected] = useState(0);
   const current = links[selected] || links[0];
-  const cityName = cityNames.get(current.cityId) || current.cityId || `${t("common.city")} ${selected + 1}`;
-  const countryId = current.countryId || cityToCountry.get(current.cityId) || "";
+  const cityName =
+    cityNames.get(current.cityId) ||
+    current.cityId ||
+    `${t("common.city")} ${selected + 1}`;
+  const countryId =
+    current.countryId || cityToCountry.get(current.cityId) || "";
   const countryName = countryNames.get(countryId) || "";
 
   return (
@@ -379,7 +460,10 @@ function PreviewPorCidade({
 
       <div className="mb-4 flex flex-wrap gap-2">
         {links.map((l, i) => {
-          const name = cityNames.get(l.cityId) || l.cityId || `${t("common.city")} ${i + 1}`;
+          const name =
+            cityNames.get(l.cityId) ||
+            l.cityId ||
+            `${t("common.city")} ${i + 1}`;
           const active = i === selected;
           return (
             <button
@@ -402,7 +486,8 @@ function PreviewPorCidade({
         <div className="mb-2 flex items-center gap-2">
           <Globe size={14} className="text-[#d4af37]" />
           <span className="text-[11px] font-black uppercase tracking-widest text-white">
-            {cityName}{countryName ? ` — ${countryName}` : ""}
+            {cityName}
+            {countryName ? ` — ${countryName}` : ""}
           </span>
         </div>
         <ModalPreview p={{ ...promocao, links_por_cidade: [current] }} />
