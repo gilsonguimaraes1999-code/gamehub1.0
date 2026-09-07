@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export const LANGUAGE_STORAGE_KEY = "sghub_language";
 export const DEFAULT_LANGUAGE = "pt-BR";
@@ -7,7 +14,11 @@ export type Language = "pt-BR" | "en-US" | "es-ES";
 type Primitive = string | number;
 type Dictionary = Record<string, string>;
 
-export const LANGUAGE_OPTIONS: { value: Language; label: string; short: string }[] = [
+export const LANGUAGE_OPTIONS: {
+  value: Language;
+  label: string;
+  short: string;
+}[] = [
   { value: "pt-BR", label: "Português", short: "PT" },
   { value: "en-US", label: "English", short: "EN" },
   { value: "es-ES", label: "Español", short: "ES" },
@@ -63,7 +74,8 @@ const ptBR = {
   "language.label": "Idioma",
   "meta.title": "Gamehub SantaGroup",
   "meta.description": "Painel de gestão de promoções do Hub Ingame SantaGroup.",
-  "meta.ogDescription": "Gerenciador premium de ofertas do Hub Ingame SantaGroup.",
+  "meta.ogDescription":
+    "Gerenciador premium de ofertas do Hub Ingame SantaGroup.",
   "login.aria": "Acesso ao SantaGroup Hub",
   "login.access": "Acessar",
   "login.enter": "Entrar",
@@ -91,7 +103,8 @@ const ptBR = {
   "hub.impersonating": "Visualizando como {name}",
   "hub.loggedAs": "logado como {name}",
   "hub.stopImpersonation": "Sair do modo visualização",
-  "home.subtitle": "Bem-vindo ao Comercial SantaGroup. Selecione uma promoção para ver os detalhes.",
+  "home.subtitle":
+    "Bem-vindo ao Comercial SantaGroup. Selecione uma promoção para ver os detalhes.",
   "home.newPromotion": "Nova Promoção",
   "home.newShort": "Nova",
   "home.noPermission": "Você não tem permissão para visualizar promoções.",
@@ -108,6 +121,7 @@ const ptBR = {
   "promotion.type.battlepass": "BattlePass",
   "promotion.type.battlepassInfo": "BattlePass Informação",
   "promotion.type.oferta_cidade": "Oferta da Cidade",
+  "promotion.type.cupom": "Cupom",
   "promotion.field.oldPrice": "Preço Antigo",
   "promotion.field.price": "Preço",
   "promotion.field.buttonText": "Texto do Botão",
@@ -116,6 +130,10 @@ const ptBR = {
   "promotion.field.discountPercent": "Percentual de Desconto",
   "promotion.field.video": "Vídeo",
   "promotion.field.thumbnail": "Miniatura",
+  "promotion.field.category": "Categoria",
+  "promotion.field.minimumPurchase": "Valor Mínimo da Compra",
+  "promotion.field.startDate": "Data de Início",
+  "promotion.field.expirationDate": "Data de Expiração",
   "promotion.form.defaultSubmit": "Salvar Promoção",
   "promotion.form.required": "Preencha os campos obrigatórios.",
   "promotion.form.general": "Informações Gerais",
@@ -146,10 +164,20 @@ const ptBR = {
   "promotion.form.cityButtonText": "Texto do Botão da Oferta da Cidade",
   "promotion.form.cityTotalPrice": "Preço Total da Oferta da Cidade",
   "promotion.form.cityDiscountPrice": "Preço com Desconto da Oferta da Cidade",
-  "promotion.form.cityDiscountPercent": "Percentual de Desconto da Oferta da Cidade",
+  "promotion.form.cityDiscountPercent":
+    "Percentual de Desconto da Oferta da Cidade",
   "promotion.form.cityTitle": "Título da Oferta da Cidade",
   "promotion.form.cityVideo": "Vídeo da Oferta da Cidade",
   "promotion.form.cityCoupon": "Cupom da Oferta da Cidade",
+  "promotion.form.couponCode": "Código do Cupom *",
+  "promotion.form.couponCategory": "Categoria *",
+  "promotion.form.couponCategoryPlaceholder": "Ex: Toda a Loja",
+  "promotion.form.couponDiscount": "Desconto (%) *",
+  "promotion.form.couponProductLink": "Link do Produto *",
+  "promotion.form.couponMinimum": "Valor Mínimo da Compra (opcional)",
+  "promotion.form.couponStart": "Data de Início (opcional)",
+  "promotion.form.couponExpiration": "Data de Expiração (opcional)",
+  "promotion.form.couponBanner": "Banner do Cupom (opcional)",
   "promotion.form.detailsPlaceholder": "Detalhes da promoção...",
   "promotion.form.defaultPlaceholder": "Digite {label}...",
   "promotion.form.uploadImage": "Enviar imagem",
@@ -173,18 +201,33 @@ const ptBR = {
   "modalPreview.couponPlaceholder": "CUPOM: (NOME DA CIDADE)",
   "modalPreview.titlePlaceholder": "Título",
   "modalPreview.passNamePlaceholder": "Nome do passe",
+  "modalPreview.couponWelcome": "Bem-vindo de volta!",
+  "modalPreview.couponSubtitle": "Acompanhe essas ofertas imperdíveis!",
+  "modalPreview.couponStorewide": "Toda a Loja",
+  "modalPreview.couponBannerText":
+    "Uma oferta exclusiva preparada especialmente para você.",
+  "modalPreview.buyNow": "Comprar Agora!",
+  "modalPreview.store": "Loja",
+  "modalPreview.expiresAt": "Expira em",
+  "modalPreview.noExpiration": "Sem data de expiração",
+  "modalPreview.minimumPurchase": "Compra mínima",
+  "modalPreview.useNow": "Usar Agora",
   "locations.title": "Gerenciar Locais",
-  "locations.subtitle": "Arraste a barrinha para reordenar países ou mover cidades entre eles.",
+  "locations.subtitle":
+    "Arraste a barrinha para reordenar países ou mover cidades entre eles.",
   "locations.synced": "Locais sincronizados!",
   "locations.saveFail": "Falha ao salvar.",
-  "locations.removeCountryConfirm": "Remover este país e todas as cidades dele?",
+  "locations.removeCountryConfirm":
+    "Remover este país e todas as cidades dele?",
   "locations.noPermission": "Você não tem permissão para visualizar locais.",
-  "locations.newCountryPlaceholder": "Novo país (ex.: França, Brasil, Portugal, Espanha...)",
+  "locations.newCountryPlaceholder":
+    "Novo país (ex.: França, Brasil, Portugal, Espanha...)",
   "locations.addCountry": "Adicionar país",
   "locations.dragCountry": "Arrastar país",
   "locations.dragCountryTitle": "Arraste para reordenar",
   "locations.removeCountry": "Remover país",
-  "locations.emptyCities": "Sem cidades ainda. Arraste uma cidade aqui para movê-la.",
+  "locations.emptyCities":
+    "Sem cidades ainda. Arraste uma cidade aqui para movê-la.",
   "locations.newCity": "Nova cidade",
   "locations.dragCity": "Arrastar cidade",
   "locations.dragCityTitle": "Arraste para reordenar ou mover",
@@ -200,13 +243,15 @@ const ptBR = {
   "accounts.required": "Usuário e senha obrigatórios.",
   "accounts.viewAs": "Visualizar como esta conta",
   "accounts.viewingAs": "Visualizando como {name}.",
-  "accounts.deleteConfirm": "Excluir a conta \"{user}\"?",
+  "accounts.deleteConfirm": 'Excluir a conta "{user}"?',
   "accounts.empty": "Nenhuma conta cadastrada.",
   "accounts.newPasswordPlaceholder": "Nova senha (deixe em branco para manter)",
   "permissions.title": "Permissões",
-  "permissions.subtitle": "Defina o que cada cargo pode fazer. Somente o Owner acessa e edita esta página. As alterações são gravadas na aba Configuracao e registradas em Log_Configuracao.",
+  "permissions.subtitle":
+    "Defina o que cada cargo pode fazer. Somente o Owner acessa e edita esta página. As alterações são gravadas na aba Configuracao e registradas em Log_Configuracao.",
   "permissions.ownerInfo": "Owner — acesso total a tudo (não editável).",
-  "permissions.visitorInfo": "Visitante — somente visualização, sem permissões adicionais.",
+  "permissions.visitorInfo":
+    "Visitante — somente visualização, sem permissões adicionais.",
   "permissions.saved": "Permissões salvas.",
   "permissions.unsaved": "Alterações não salvas.",
   "permissions.synced": "Sincronizado com a planilha.",
@@ -234,13 +279,16 @@ const ptBR = {
   "permission.locais.ver.label": "Visualizar",
   "permission.locais.ver.desc": "Ver países e cidades cadastrados.",
   "permission.locais.editar.label": "Editar",
-  "permission.locais.editar.desc": "Adicionar, reordenar e remover países/cidades.",
+  "permission.locais.editar.desc":
+    "Adicionar, reordenar e remover países/cidades.",
   "permission.configuracoes.ver.label": "Visualizar",
   "permission.configuracoes.ver.desc": "Acessar a página de configurações.",
   "permission.configuracoes.editar.label": "Editar",
-  "permission.configuracoes.editar.desc": "Alterar títulos, logotipo e demais opções.",
+  "permission.configuracoes.editar.desc":
+    "Alterar títulos, logotipo e demais opções.",
   "settings.title": "Configurações",
-  "settings.noPermission": "Você não tem permissão para visualizar configurações.",
+  "settings.noPermission":
+    "Você não tem permissão para visualizar configurações.",
   "settings.interfaceSaved": "Interface salva!",
   "settings.saveError": "Erro ao salvar.",
   "settings.logoSent": "Logo enviada.",
@@ -299,9 +347,12 @@ const ptBR = {
   "server.httpError": "Apps Script retornou HTTP {status}.",
   "server.invalidJson": "Resposta JSON inválida do Apps Script.",
   "server.networkFail": "Falha de rede ao chamar Apps Script.",
-  "server.deployHint": "Confira se o Web App foi implantado como: Executar como Você / Acesso: Qualquer pessoa.",
-  "server.payloadTooLarge": "Payload grande demais para gravar via GET no Apps Script.",
-  "server.correctDeployHint": "Confira se o Web App foi implantado corretamente e se APPS_SCRIPT_URL está correta.",
+  "server.deployHint":
+    "Confira se o Web App foi implantado como: Executar como Você / Acesso: Qualquer pessoa.",
+  "server.payloadTooLarge":
+    "Payload grande demais para gravar via GET no Apps Script.",
+  "server.correctDeployHint":
+    "Confira se o Web App foi implantado corretamente e se APPS_SCRIPT_URL está correta.",
   "server.emptyImage": "Imagem vazia para upload.",
   "server.imgbbFail": "Falha no upload ImgBB (HTTP {status}): {message}",
   "server.noImageUrl": "URL da imagem não retornada.",
@@ -384,7 +435,8 @@ const enUS: Dictionary = {
   "hub.impersonating": "Viewing as {name}",
   "hub.loggedAs": "signed in as {name}",
   "hub.stopImpersonation": "Exit view mode",
-  "home.subtitle": "Welcome to SantaGroup Commercial. Select a promotion to view details.",
+  "home.subtitle":
+    "Welcome to SantaGroup Commercial. Select a promotion to view details.",
   "home.newPromotion": "New Promotion",
   "home.newShort": "New",
   "home.noPermission": "You do not have permission to view promotions.",
@@ -400,6 +452,7 @@ const enUS: Dictionary = {
   "promotion.type.link_exclusivo": "Exclusive Link",
   "promotion.type.battlepassInfo": "BattlePass Information",
   "promotion.type.oferta_cidade": "City Offer",
+  "promotion.type.cupom": "Coupon",
   "promotion.field.oldPrice": "Old Price",
   "promotion.field.price": "Price",
   "promotion.field.buttonText": "Button Text",
@@ -408,6 +461,10 @@ const enUS: Dictionary = {
   "promotion.field.discountPercent": "Discount Percentage",
   "promotion.field.video": "Video",
   "promotion.field.thumbnail": "Thumbnail",
+  "promotion.field.category": "Category",
+  "promotion.field.minimumPurchase": "Minimum Purchase",
+  "promotion.field.startDate": "Start Date",
+  "promotion.field.expirationDate": "Expiration Date",
   "promotion.form.defaultSubmit": "Save Promotion",
   "promotion.form.required": "Fill in the required fields.",
   "promotion.form.general": "General Information",
@@ -442,6 +499,15 @@ const enUS: Dictionary = {
   "promotion.form.cityTitle": "City Offer Title",
   "promotion.form.cityVideo": "City Offer Video",
   "promotion.form.cityCoupon": "City Offer Coupon",
+  "promotion.form.couponCode": "Coupon Code *",
+  "promotion.form.couponCategory": "Category *",
+  "promotion.form.couponCategoryPlaceholder": "Ex: Entire Store",
+  "promotion.form.couponDiscount": "Discount (%) *",
+  "promotion.form.couponProductLink": "Product Link *",
+  "promotion.form.couponMinimum": "Minimum Purchase (optional)",
+  "promotion.form.couponStart": "Start Date (optional)",
+  "promotion.form.couponExpiration": "Expiration Date (optional)",
+  "promotion.form.couponBanner": "Coupon Banner (optional)",
   "promotion.form.detailsPlaceholder": "Promotion details...",
   "promotion.form.defaultPlaceholder": "Enter {label}...",
   "promotion.form.uploadImage": "Upload image",
@@ -465,13 +531,27 @@ const enUS: Dictionary = {
   "modalPreview.couponPlaceholder": "COUPON: (CITY NAME)",
   "modalPreview.titlePlaceholder": "Title",
   "modalPreview.passNamePlaceholder": "Pass name",
+  "modalPreview.couponWelcome": "Welcome back!",
+  "modalPreview.couponSubtitle": "Check out these unmissable offers!",
+  "modalPreview.couponStorewide": "Entire Store",
+  "modalPreview.couponBannerText":
+    "An exclusive offer prepared especially for you.",
+  "modalPreview.buyNow": "Buy Now!",
+  "modalPreview.store": "Store",
+  "modalPreview.expiresAt": "Expires at",
+  "modalPreview.noExpiration": "No expiration date",
+  "modalPreview.minimumPurchase": "Minimum purchase",
+  "modalPreview.useNow": "Use Now",
   "locations.title": "Manage Locations",
-  "locations.subtitle": "Drag the handle to reorder countries or move cities between them.",
+  "locations.subtitle":
+    "Drag the handle to reorder countries or move cities between them.",
   "locations.synced": "Locations synced!",
   "locations.saveFail": "Failed to save.",
-  "locations.removeCountryConfirm": "Remove this country and all of its cities?",
+  "locations.removeCountryConfirm":
+    "Remove this country and all of its cities?",
   "locations.noPermission": "You do not have permission to view locations.",
-  "locations.newCountryPlaceholder": "New country (e.g. France, Brazil, Portugal, Spain...)",
+  "locations.newCountryPlaceholder":
+    "New country (e.g. France, Brazil, Portugal, Spain...)",
   "locations.addCountry": "Add country",
   "locations.dragCountry": "Drag country",
   "locations.dragCountryTitle": "Drag to reorder",
@@ -492,13 +572,16 @@ const enUS: Dictionary = {
   "accounts.required": "User and password are required.",
   "accounts.viewAs": "View as this account",
   "accounts.viewingAs": "Viewing as {name}.",
-  "accounts.deleteConfirm": "Delete account \"{user}\"?",
+  "accounts.deleteConfirm": 'Delete account "{user}"?',
   "accounts.empty": "No accounts registered.",
-  "accounts.newPasswordPlaceholder": "New password (leave blank to keep current)",
+  "accounts.newPasswordPlaceholder":
+    "New password (leave blank to keep current)",
   "permissions.title": "Permissions",
-  "permissions.subtitle": "Define what each role can do. Only the Owner can access and edit this page. Changes are saved in the Configuracao tab and logged in Log_Configuracao.",
+  "permissions.subtitle":
+    "Define what each role can do. Only the Owner can access and edit this page. Changes are saved in the Configuracao tab and logged in Log_Configuracao.",
   "permissions.ownerInfo": "Owner — full access to everything (not editable).",
-  "permissions.visitorInfo": "Visitor — view only, with no additional permissions.",
+  "permissions.visitorInfo":
+    "Visitor — view only, with no additional permissions.",
   "permissions.saved": "Permissions saved.",
   "permissions.unsaved": "Unsaved changes.",
   "permissions.synced": "Synced with the spreadsheet.",
@@ -518,7 +601,8 @@ const enUS: Dictionary = {
   "permission.locais.ver.desc": "View registered countries and cities.",
   "permission.locais.editar.desc": "Add, reorder, and remove countries/cities.",
   "permission.configuracoes.ver.desc": "Access the settings page.",
-  "permission.configuracoes.editar.desc": "Edit titles, logo, and other options.",
+  "permission.configuracoes.editar.desc":
+    "Edit titles, logo, and other options.",
   "settings.title": "Settings",
   "settings.noPermission": "You do not have permission to view settings.",
   "settings.interfaceSaved": "Interface saved!",
@@ -577,9 +661,12 @@ const enUS: Dictionary = {
   "server.httpError": "Apps Script returned HTTP {status}.",
   "server.invalidJson": "Invalid JSON response from Apps Script.",
   "server.networkFail": "Network failure while calling Apps Script.",
-  "server.deployHint": "Check that the Web App was deployed as: Execute as You / Access: Anyone.",
-  "server.payloadTooLarge": "Payload is too large to save through GET in Apps Script.",
-  "server.correctDeployHint": "Check that the Web App was deployed correctly and APPS_SCRIPT_URL is correct.",
+  "server.deployHint":
+    "Check that the Web App was deployed as: Execute as You / Access: Anyone.",
+  "server.payloadTooLarge":
+    "Payload is too large to save through GET in Apps Script.",
+  "server.correctDeployHint":
+    "Check that the Web App was deployed correctly and APPS_SCRIPT_URL is correct.",
   "server.emptyImage": "Empty image for upload.",
   "server.imgbbFail": "ImgBB upload failed (HTTP {status}): {message}",
   "server.noImageUrl": "Image URL was not returned.",
@@ -632,7 +719,8 @@ const esES: Dictionary = {
   "common.product": "Producto",
   "common.duration": "Duración",
   "language.label": "Idioma",
-  "meta.description": "Panel de gestión de promociones de SantaGroup Hub Ingame.",
+  "meta.description":
+    "Panel de gestión de promociones de SantaGroup Hub Ingame.",
   "meta.ogDescription": "Gestor premium de ofertas de SantaGroup Hub Ingame.",
   "login.aria": "Acceso a SantaGroup Hub",
   "login.access": "Acceder",
@@ -660,7 +748,8 @@ const esES: Dictionary = {
   "hub.impersonating": "Visualizando como {name}",
   "hub.loggedAs": "con sesión como {name}",
   "hub.stopImpersonation": "Salir del modo visualización",
-  "home.subtitle": "Bienvenido al Comercial SantaGroup. Selecciona una promoción para ver los detalles.",
+  "home.subtitle":
+    "Bienvenido al Comercial SantaGroup. Selecciona una promoción para ver los detalles.",
   "home.newPromotion": "Nueva Promoción",
   "home.newShort": "Nueva",
   "home.noPermission": "No tienes permiso para visualizar promociones.",
@@ -676,6 +765,7 @@ const esES: Dictionary = {
   "promotion.type.link_exclusivo": "Enlace Exclusivo",
   "promotion.type.battlepassInfo": "Información BattlePass",
   "promotion.type.oferta_cidade": "Oferta de la Ciudad",
+  "promotion.type.cupom": "Cupón",
   "promotion.field.oldPrice": "Precio Anterior",
   "promotion.field.price": "Precio",
   "promotion.field.buttonText": "Texto del Botón",
@@ -684,6 +774,10 @@ const esES: Dictionary = {
   "promotion.field.discountPercent": "Porcentaje de Descuento",
   "promotion.field.video": "Video",
   "promotion.field.thumbnail": "Miniatura",
+  "promotion.field.category": "Categoría",
+  "promotion.field.minimumPurchase": "Compra Mínima",
+  "promotion.field.startDate": "Fecha de Inicio",
+  "promotion.field.expirationDate": "Fecha de Expiración",
   "promotion.form.defaultSubmit": "Guardar Promoción",
   "promotion.form.required": "Completa los campos obligatorios.",
   "promotion.form.general": "Información General",
@@ -713,11 +807,22 @@ const esES: Dictionary = {
   "promotion.form.linkImage": "Imagen del Enlace",
   "promotion.form.cityButtonText": "Texto del Botón de la Oferta de la Ciudad",
   "promotion.form.cityTotalPrice": "Precio Total de la Oferta de la Ciudad",
-  "promotion.form.cityDiscountPrice": "Precio con Descuento de la Oferta de la Ciudad",
-  "promotion.form.cityDiscountPercent": "Porcentaje de Descuento de la Oferta de la Ciudad",
+  "promotion.form.cityDiscountPrice":
+    "Precio con Descuento de la Oferta de la Ciudad",
+  "promotion.form.cityDiscountPercent":
+    "Porcentaje de Descuento de la Oferta de la Ciudad",
   "promotion.form.cityTitle": "Título de la Oferta de la Ciudad",
   "promotion.form.cityVideo": "Video de la Oferta de la Ciudad",
   "promotion.form.cityCoupon": "Cupón de la Oferta de la Ciudad",
+  "promotion.form.couponCode": "Código del Cupón *",
+  "promotion.form.couponCategory": "Categoría *",
+  "promotion.form.couponCategoryPlaceholder": "Ej.: Toda la Tienda",
+  "promotion.form.couponDiscount": "Descuento (%) *",
+  "promotion.form.couponProductLink": "Enlace del Producto *",
+  "promotion.form.couponMinimum": "Compra Mínima (opcional)",
+  "promotion.form.couponStart": "Fecha de Inicio (opcional)",
+  "promotion.form.couponExpiration": "Fecha de Expiración (opcional)",
+  "promotion.form.couponBanner": "Banner del Cupón (opcional)",
   "promotion.form.detailsPlaceholder": "Detalles de la promoción...",
   "promotion.form.defaultPlaceholder": "Escribe {label}...",
   "promotion.form.uploadImage": "Subir imagen",
@@ -726,7 +831,8 @@ const esES: Dictionary = {
   "promotion.form.uploadFail": "Error al subir.",
   "promotion.form.salesChannels": "Canales de Venta (Enlaces)",
   "promotion.form.storeImageByCity": "Tienda e Imagen por Ciudad",
-  "promotion.form.noCountry": "No hay países registrados. Ve a Gestionar Ubicaciones.",
+  "promotion.form.noCountry":
+    "No hay países registrados. Ve a Gestionar Ubicaciones.",
   "promotion.form.storeLinkPlaceholder": "https:// ... (enlace de la tienda)",
   "promotion.form.offerImagePlaceholder": "https:// ... (imagen de la oferta)",
   "promotion.form.noCities": "No hay ciudades en este país.",
@@ -741,18 +847,32 @@ const esES: Dictionary = {
   "modalPreview.couponPlaceholder": "CUPÓN: (NOMBRE DE LA CIUDAD)",
   "modalPreview.titlePlaceholder": "Título",
   "modalPreview.passNamePlaceholder": "Nombre del pase",
+  "modalPreview.couponWelcome": "¡Bienvenido de vuelta!",
+  "modalPreview.couponSubtitle": "¡Descubre estas ofertas imperdibles!",
+  "modalPreview.couponStorewide": "Toda la Tienda",
+  "modalPreview.couponBannerText":
+    "Una oferta exclusiva preparada especialmente para ti.",
+  "modalPreview.buyNow": "¡Comprar Ahora!",
+  "modalPreview.store": "Tienda",
+  "modalPreview.expiresAt": "Expira el",
+  "modalPreview.noExpiration": "Sin fecha de expiración",
+  "modalPreview.minimumPurchase": "Compra mínima",
+  "modalPreview.useNow": "Usar Ahora",
   "locations.title": "Gestionar Ubicaciones",
-  "locations.subtitle": "Arrastra la barra para reordenar países o mover ciudades entre ellos.",
+  "locations.subtitle":
+    "Arrastra la barra para reordenar países o mover ciudades entre ellos.",
   "locations.synced": "¡Ubicaciones sincronizadas!",
   "locations.saveFail": "Error al guardar.",
   "locations.removeCountryConfirm": "¿Eliminar este país y todas sus ciudades?",
   "locations.noPermission": "No tienes permiso para visualizar ubicaciones.",
-  "locations.newCountryPlaceholder": "Nuevo país (ej.: Francia, Brasil, Portugal, España...)",
+  "locations.newCountryPlaceholder":
+    "Nuevo país (ej.: Francia, Brasil, Portugal, España...)",
   "locations.addCountry": "Agregar país",
   "locations.dragCountry": "Arrastrar país",
   "locations.dragCountryTitle": "Arrastra para reordenar",
   "locations.removeCountry": "Eliminar país",
-  "locations.emptyCities": "Aún no hay ciudades. Arrastra una ciudad aquí para moverla.",
+  "locations.emptyCities":
+    "Aún no hay ciudades. Arrastra una ciudad aquí para moverla.",
   "locations.newCity": "Nueva ciudad",
   "locations.dragCity": "Arrastrar ciudad",
   "locations.dragCityTitle": "Arrastra para reordenar o mover",
@@ -768,13 +888,16 @@ const esES: Dictionary = {
   "accounts.required": "Usuario y contraseña son obligatorios.",
   "accounts.viewAs": "Visualizar como esta cuenta",
   "accounts.viewingAs": "Visualizando como {name}.",
-  "accounts.deleteConfirm": "¿Eliminar la cuenta \"{user}\"?",
+  "accounts.deleteConfirm": '¿Eliminar la cuenta "{user}"?',
   "accounts.empty": "No hay cuentas registradas.",
-  "accounts.newPasswordPlaceholder": "Nueva contraseña (deja en blanco para mantenerla)",
+  "accounts.newPasswordPlaceholder":
+    "Nueva contraseña (deja en blanco para mantenerla)",
   "permissions.title": "Permisos",
-  "permissions.subtitle": "Define qué puede hacer cada cargo. Solo el Owner accede y edita esta página. Los cambios se guardan en la pestaña Configuracao y se registran en Log_Configuracao.",
+  "permissions.subtitle":
+    "Define qué puede hacer cada cargo. Solo el Owner accede y edita esta página. Los cambios se guardan en la pestaña Configuracao y se registran en Log_Configuracao.",
   "permissions.ownerInfo": "Owner — acceso total a todo (no editable).",
-  "permissions.visitorInfo": "Visitante — solo visualización, sin permisos adicionales.",
+  "permissions.visitorInfo":
+    "Visitante — solo visualización, sin permisos adicionales.",
   "permissions.saved": "Permisos guardados.",
   "permissions.unsaved": "Cambios no guardados.",
   "permissions.synced": "Sincronizado con la hoja.",
@@ -802,13 +925,16 @@ const esES: Dictionary = {
   "permission.locais.ver.label": "Visualizar",
   "permission.locais.ver.desc": "Ver países y ciudades registrados.",
   "permission.locais.editar.label": "Editar",
-  "permission.locais.editar.desc": "Agregar, reordenar y eliminar países/ciudades.",
+  "permission.locais.editar.desc":
+    "Agregar, reordenar y eliminar países/ciudades.",
   "permission.configuracoes.ver.label": "Visualizar",
   "permission.configuracoes.ver.desc": "Acceder a la página de configuración.",
   "permission.configuracoes.editar.label": "Editar",
-  "permission.configuracoes.editar.desc": "Cambiar títulos, logotipo y otras opciones.",
+  "permission.configuracoes.editar.desc":
+    "Cambiar títulos, logotipo y otras opciones.",
   "settings.title": "Configuración",
-  "settings.noPermission": "No tienes permiso para visualizar la configuración.",
+  "settings.noPermission":
+    "No tienes permiso para visualizar la configuración.",
   "settings.interfaceSaved": "¡Interfaz guardada!",
   "settings.saveError": "Error al guardar.",
   "settings.logoSent": "Logo subido.",
@@ -865,9 +991,12 @@ const esES: Dictionary = {
   "server.httpError": "Apps Script devolvió HTTP {status}.",
   "server.invalidJson": "Respuesta JSON inválida de Apps Script.",
   "server.networkFail": "Fallo de red al llamar a Apps Script.",
-  "server.deployHint": "Verifica que la Web App esté implementada como: Ejecutar como Tú / Acceso: Cualquier persona.",
-  "server.payloadTooLarge": "El payload es demasiado grande para guardar vía GET en Apps Script.",
-  "server.correctDeployHint": "Verifica que la Web App esté implementada correctamente y que APPS_SCRIPT_URL sea correcta.",
+  "server.deployHint":
+    "Verifica que la Web App esté implementada como: Ejecutar como Tú / Acceso: Cualquier persona.",
+  "server.payloadTooLarge":
+    "El payload es demasiado grande para guardar vía GET en Apps Script.",
+  "server.correctDeployHint":
+    "Verifica que la Web App esté implementada correctamente y que APPS_SCRIPT_URL sea correcta.",
   "server.emptyImage": "Imagen vacía para subir.",
   "server.imgbbFail": "Falló la subida a ImgBB (HTTP {status}): {message}",
   "server.noImageUrl": "No se devolvió la URL de la imagen.",
@@ -880,7 +1009,9 @@ const dictionaries: Record<Language, Dictionary> = {
 };
 
 function normalizeLanguage(value: string | null | undefined): Language {
-  return LANGUAGE_OPTIONS.some((option) => option.value === value) ? (value as Language) : DEFAULT_LANGUAGE;
+  return LANGUAGE_OPTIONS.some((option) => option.value === value)
+    ? (value as Language)
+    : DEFAULT_LANGUAGE;
 }
 
 function interpolate(text: string, vars?: Record<string, Primitive>) {
@@ -902,26 +1033,44 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setLanguageState(normalizeLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)));
+    setLanguageState(
+      normalizeLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)),
+    );
   }, []);
 
   useEffect(() => {
-    if (typeof document !== "undefined") document.documentElement.lang = language;
-    if (typeof document !== "undefined") document.title = dictionaries[language]["meta.title"];
-    if (typeof window !== "undefined") window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    if (typeof document !== "undefined")
+      document.documentElement.lang = language;
+    if (typeof document !== "undefined")
+      document.title = dictionaries[language]["meta.title"];
+    if (typeof window !== "undefined")
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
   }, [language]);
 
-  const value = useMemo<I18nContextValue>(() => ({
-    language,
-    setLanguage: (next) => setLanguageState(normalizeLanguage(next)),
-    t: (key, vars) => interpolate(dictionaries[language][key] ?? dictionaries[DEFAULT_LANGUAGE][key] ?? key, vars),
-    formatDate: (iso?: string) => {
-      if (!iso) return "—";
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) return "—";
-      return date.toLocaleDateString(language, { day: "2-digit", month: "2-digit", year: "numeric" });
-    },
-  }), [language]);
+  const value = useMemo<I18nContextValue>(
+    () => ({
+      language,
+      setLanguage: (next) => setLanguageState(normalizeLanguage(next)),
+      t: (key, vars) =>
+        interpolate(
+          dictionaries[language][key] ??
+            dictionaries[DEFAULT_LANGUAGE][key] ??
+            key,
+          vars,
+        ),
+      formatDate: (iso?: string) => {
+        if (!iso) return "—";
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return "—";
+        return date.toLocaleDateString(language, {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      },
+    }),
+    [language],
+  );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
@@ -932,21 +1081,33 @@ export function useI18n() {
     return {
       language: DEFAULT_LANGUAGE,
       setLanguage: () => undefined,
-      t: (key: string, vars?: Record<string, Primitive>) => translate(key, DEFAULT_LANGUAGE, vars),
+      t: (key: string, vars?: Record<string, Primitive>) =>
+        translate(key, DEFAULT_LANGUAGE, vars),
       formatDate: (iso?: string) => {
         if (!iso) return "—";
         const date = new Date(iso);
         return Number.isNaN(date.getTime())
           ? "—"
-          : date.toLocaleDateString(DEFAULT_LANGUAGE, { day: "2-digit", month: "2-digit", year: "numeric" });
+          : date.toLocaleDateString(DEFAULT_LANGUAGE, {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
       },
     };
   }
   return ctx;
 }
 
-export function translate(key: string, language: Language = DEFAULT_LANGUAGE, vars?: Record<string, Primitive>) {
-  return interpolate(dictionaries[language][key] ?? dictionaries[DEFAULT_LANGUAGE][key] ?? key, vars);
+export function translate(
+  key: string,
+  language: Language = DEFAULT_LANGUAGE,
+  vars?: Record<string, Primitive>,
+) {
+  return interpolate(
+    dictionaries[language][key] ?? dictionaries[DEFAULT_LANGUAGE][key] ?? key,
+    vars,
+  );
 }
 
 export function currentLanguage(): Language {
@@ -954,6 +1115,9 @@ export function currentLanguage(): Language {
   return normalizeLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY));
 }
 
-export function translateCurrent(key: string, vars?: Record<string, Primitive>) {
+export function translateCurrent(
+  key: string,
+  vars?: Record<string, Primitive>,
+) {
   return translate(key, currentLanguage(), vars);
 }
