@@ -1,6 +1,10 @@
-import { Clock3, Copy, ImageIcon, ShoppingCart, X } from "lucide-react";
+import { Clock3, Copy, ImageIcon, ShoppingCart } from "lucide-react";
 import type { Promocao } from "@/lib/sghub-api";
 import { useI18n } from "@/lib/i18n";
+import {
+  getCouponTimeRemaining,
+  getFirstPromotionUrl,
+} from "@/lib/promotion-types";
 
 const TIPO_LABEL_KEYS: Record<string, string> = {
   vip_mensal: "promotion.type.vip_mensal",
@@ -9,6 +13,7 @@ const TIPO_LABEL_KEYS: Record<string, string> = {
   battlepass: "promotion.type.battlepass",
   oferta_cidade: "promotion.type.oferta_cidade",
   cupom: "promotion.type.cupom",
+  colecao_vip: "promotion.type.colecao_vip",
 };
 
 function toEmbedUrl(url: string): string | null {
@@ -83,6 +88,7 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
     const discount = String(p.percentual_desconto || "30").replace("%", "");
     const category = p.categoria || t("modalPreview.couponStorewide");
     const code = p.cupom || "NOBRE";
+    const remaining = getCouponTimeRemaining(p.data_expiracao);
 
     return (
       <aside className="w-full">
@@ -93,90 +99,91 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
           </h3>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0e1110] shadow-2xl">
-          <div className="flex items-start justify-between gap-6 px-5 sm:px-7 pt-5 sm:pt-7 pb-4">
-            <div>
-              <h4 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white">
-                {t("modalPreview.couponWelcome")}
-              </h4>
-              <p className="mt-1 text-sm text-white/55">
-                {t("modalPreview.couponSubtitle")}
-              </p>
+        <div className="rounded-2xl border border-white/10 bg-[#0e1110] p-5 shadow-2xl sm:p-6">
+          <section className="rounded-xl border border-white/10 bg-white/[0.015] p-5">
+            <div className="flex items-center gap-3 border-b border-white/10 pb-4 text-white">
+              <ShoppingCart size={22} />
+              <h5 className="text-lg font-black uppercase">
+                {t("modalPreview.store")}
+              </h5>
             </div>
-            <button
-              type="button"
-              aria-label={t("common.close")}
-              className="rounded-md bg-white/10 p-2 text-white/75"
-            >
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="px-5 sm:px-7">
-            <div className="relative min-h-36 overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(115deg,#29110f,#6e1822_45%,#d93d2d)]">
-              {p.imagem && (
-                <img
-                  src={p.imagem}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-black/20" />
-              <div className="relative z-10 flex min-h-36 max-w-2xl flex-col items-start justify-center p-5 sm:p-6">
-                <span className="text-xl font-black text-white">
-                  {category}
-                </span>
-                <span className="mt-1 max-w-xl text-sm text-white/75">
-                  {t("modalPreview.couponBannerText")}
-                </span>
-                <span className="mt-4 rounded-lg bg-[#16c1df] px-5 py-2 text-sm font-black text-white">
-                  {t("modalPreview.buyNow")}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-5 px-5 sm:px-7 py-5 sm:py-6 lg:grid-cols-2">
-            <section className="rounded-xl border border-white/10 bg-white/[0.015] p-5">
-              <div className="flex items-center gap-3 border-b border-white/10 pb-4 text-white">
-                <ShoppingCart size={22} />
-                <h5 className="text-lg font-black uppercase">
-                  {t("modalPreview.store")}
-                </h5>
-              </div>
-              <p className="mt-4 text-base font-bold text-white/55">
-                {category}
-              </p>
-              <p className="mt-1 text-3xl font-black text-white">
-                {discount}% OFF
-              </p>
-              <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-white/55">
-                <Clock3 size={16} />
-                <span>
-                  {p.data_expiracao
-                    ? `${t("modalPreview.expiresAt")}: ${p.data_expiracao.replace("T", " ")}`
+            <p className="mt-4 text-base font-bold text-white/55">{category}</p>
+            <p className="mt-1 text-3xl font-black text-white">
+              {discount}% OFF
+            </p>
+            <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-white/55">
+              <Clock3 size={16} />
+              <span>
+                {remaining
+                  ? `${t("modalPreview.expiresAt")}: ${remaining.days}d ${remaining.hours}h`
+                  : p.data_expiracao
+                    ? t("modalPreview.expired")
                     : t("modalPreview.noExpiration")}
-                </span>
+              </span>
+            </div>
+            {p.valor_minimo && (
+              <p className="mt-2 text-xs text-white/45">
+                {t("modalPreview.minimumPurchase")}: {p.valor_minimo}
+              </p>
+            )}
+            <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <div className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-black/20 px-4 py-3 font-bold text-white">
+                <Copy size={16} /> {code}
               </div>
-              {p.valor_minimo && (
-                <p className="mt-2 text-xs text-white/45">
-                  {t("modalPreview.minimumPurchase")}: {p.valor_minimo}
-                </p>
-              )}
-              <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <div className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-black/20 px-4 py-3 font-bold text-white">
-                  <Copy size={16} /> {code}
-                </div>
-                <button
-                  type="button"
-                  className="rounded-lg bg-[#16c1df] px-4 py-3 font-bold text-white"
-                >
-                  {t("modalPreview.useNow")}
-                </button>
-              </div>
-            </section>
+              <button
+                type="button"
+                className="rounded-lg bg-[#16c1df] px-4 py-3 font-bold text-white"
+              >
+                {t("modalPreview.useNow")}
+              </button>
+            </div>
+          </section>
+        </div>
+      </aside>
+    );
+  }
 
-            <div className="hidden min-h-60 rounded-xl border border-dashed border-white/5 bg-gradient-to-br from-white/[0.015] to-transparent lg:block" />
+  if (tipo === "colecao_vip") {
+    const tebexUrl = getFirstPromotionUrl(p.links_por_cidade);
+
+    return (
+      <aside className="w-full">
+        <div className="mb-4 flex items-center gap-2">
+          <ImageIcon size={18} className="text-[#e5c12f]" />
+          <h3 className="text-lg font-bold text-white">
+            {t("modalPreview.title")}
+          </h3>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#202126] p-3 shadow-2xl">
+          <div className="relative aspect-[7/1] min-h-24 overflow-hidden rounded-lg bg-black/60">
+            {p.imagem ? (
+              <img
+                src={p.imagem}
+                alt={p.titulo || t("promotion.type.colecao_vip")}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs uppercase tracking-widest text-white/25">
+                {t("modalPreview.noImage")}
+              </div>
+            )}
+          </div>
+          <div className="px-1 pt-2 text-xs text-white/85">
+            <span className="font-semibold">
+              {t("promotion.form.vipCollectionTebex")}:
+            </span>{" "}
+            <span className="break-all">
+              {tebexUrl || t("modalPreview.linkPlaceholder")}
+            </span>
+          </div>
+          <div className="px-1 pb-1 pt-3">
+            <h4 className="text-base font-bold text-white">
+              {p.titulo || t("modalPreview.vipCollectionTitlePlaceholder")}
+            </h4>
+            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-white/70">
+              {p.descricao ||
+                t("modalPreview.vipCollectionDescriptionPlaceholder")}
+            </p>
           </div>
         </div>
       </aside>

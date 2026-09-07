@@ -1,11 +1,31 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Trash2, Upload, Info, Layers, LinkIcon } from "lucide-react";
+import { enUS, es, ptBR } from "date-fns/locale";
+import {
+  CalendarDays,
+  Trash2,
+  Upload,
+  Info,
+  Layers,
+  LinkIcon,
+} from "lucide-react";
 import type { Local, Promocao, LinkPorCidade } from "@/lib/sghub-api";
 import { uploadImage } from "@/lib/sghub-api";
 import ModalPreview from "@/components/sghub/ModalPreview";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useI18n } from "@/lib/i18n";
 import { getPromotionValidationErrors } from "@/lib/promotion-validation";
+import {
+  combineLocalDateTime,
+  parseLocalDateTime,
+  preparePromotionForSubmit,
+  promotionUsesSalesChannels,
+} from "@/lib/promotion-types";
 
 const TIPOS = [
   { value: "vip_mensal", labelKey: "promotion.type.vip_mensal" },
@@ -14,6 +34,7 @@ const TIPOS = [
   { value: "battlepass", labelKey: "promotion.type.battlepassInfo" },
   { value: "oferta_cidade", labelKey: "promotion.type.oferta_cidade" },
   { value: "cupom", labelKey: "promotion.type.cupom" },
+  { value: "colecao_vip", labelKey: "promotion.type.colecao_vip" },
 ];
 
 interface Props {
@@ -98,6 +119,174 @@ function ImageUploadButton({
         accept="image/*"
         hidden
         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+      />
+    </label>
+  );
+}
+
+function DateTimeField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  onChange: (value: string) => void;
+}) {
+  const { t, language } = useI18n();
+  const parsed = parseLocalDateTime(value);
+  const [open, setOpen] = useState(false);
+  const [draftDate, setDraftDate] = useState<Date | undefined>(parsed.date);
+  const [draftHour, setDraftHour] = useState(parsed.hour);
+  const [draftMinute, setDraftMinute] = useState(parsed.minute);
+  const [draftSecond, setDraftSecond] = useState(parsed.second);
+
+  const openCalendar = (nextOpen: boolean) => {
+    if (nextOpen) {
+      const current = parseLocalDateTime(value);
+      setDraftDate(current.date);
+      setDraftHour(current.hour);
+      setDraftMinute(current.minute);
+      setDraftSecond(current.second);
+    }
+    setOpen(nextOpen);
+  };
+
+  const formattedValue = parsed.date
+    ? `${String(parsed.date.getDate()).padStart(2, "0")}/${String(parsed.date.getMonth() + 1).padStart(2, "0")}/${parsed.date.getFullYear()} ${String(parsed.hour).padStart(2, "0")}:${String(parsed.minute).padStart(2, "0")}:${String(parsed.second).padStart(2, "0")}`
+    : "dd/mm/aaaa --:--:--";
+
+  const saveDraft = (
+    date = draftDate,
+    hour = draftHour,
+    minute = draftMinute,
+    second = draftSecond,
+  ) => {
+    if (date) onChange(combineLocalDateTime(date, hour, minute, second));
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className={labelCls}>{label}</label>
+      <Popover open={open} onOpenChange={openCalendar}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            className={`${inputCls} flex items-center justify-between text-left ${parsed.date ? "text-white" : "text-white/45"}`}
+          >
+            <span>{formattedValue}</span>
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#e5c12f]/50 bg-[#e5c12f]/10 text-[#e5c12f]">
+              <CalendarDays size={17} />
+            </span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[268px] overflow-hidden border-[#e5c12f]/55 bg-[#151515] p-0 text-white shadow-[0_18px_60px_rgba(0,0,0,.65)]"
+        >
+          <Calendar
+            mode="single"
+            showOutsideDays={false}
+            locale={language === "en" ? enUS : language === "es" ? es : ptBR}
+            selected={draftDate}
+            onSelect={(date) => {
+              setDraftDate(date);
+              saveDraft(date);
+            }}
+            defaultMonth={draftDate}
+            formatters={{
+              formatWeekdayName: (date) =>
+                date.toLocaleDateString(language, { weekday: "narrow" }),
+              formatCaption: (date) => {
+                const month = date
+                  .toLocaleDateString(language, { month: "short" })
+                  .replace(".", "");
+                return `${month.charAt(0).toUpperCase()}${month.slice(1)} ${date.getFullYear()}`;
+              },
+            }}
+            className="w-full bg-[#151515] p-3 [--cell-size:2.15rem]"
+            classNames={{
+              root: "w-full",
+              month: "w-full",
+              nav: "absolute inset-x-0 top-0 flex h-8 w-full items-center justify-between",
+              month_caption: "flex h-8 w-full items-center justify-center px-8",
+              caption_label:
+                "flex h-8 items-center justify-center text-white font-bold capitalize leading-none",
+              weekdays: "grid w-full grid-cols-7",
+              weekday:
+                "flex items-center justify-center text-white/40 font-black text-[10px]",
+              week: "grid w-full grid-cols-7",
+              day_button:
+                "text-white/80 hover:bg-[#e5c12f]/10 hover:text-[#f9e29f] data-[selected-single=true]:!bg-transparent data-[selected-single=true]:!text-[#e5c12f] data-[selected-single=true]:font-black data-[selected-single=true]:!ring-0",
+              today: "rounded-md text-[#f9e29f]",
+              button_previous:
+                "text-white/60 hover:bg-[#e5c12f]/10 hover:text-[#e5c12f]",
+              button_next:
+                "text-white/60 hover:bg-[#e5c12f]/10 hover:text-[#e5c12f]",
+              outside: "text-white/20",
+            }}
+          />
+          <div className="grid grid-cols-3 gap-2 border-t border-white/10 px-3 py-3">
+            <TimeInput
+              label={t("promotion.calendar.hour")}
+              value={draftHour}
+              max={23}
+              onChange={(next) => {
+                setDraftHour(next);
+                saveDraft(draftDate, next, draftMinute, draftSecond);
+              }}
+            />
+            <TimeInput
+              label={t("promotion.calendar.minuteShort")}
+              value={draftMinute}
+              max={59}
+              onChange={(next) => {
+                setDraftMinute(next);
+                saveDraft(draftDate, draftHour, next, draftSecond);
+              }}
+            />
+            <TimeInput
+              label={t("promotion.calendar.secondShort")}
+              value={draftSecond}
+              max={59}
+              onChange={(next) => {
+                setDraftSecond(next);
+                saveDraft(draftDate, draftHour, draftMinute, next);
+              }}
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function TimeInput({
+  label,
+  value,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="block text-center text-[9px] font-black uppercase tracking-widest text-white/40">
+        {label}
+      </span>
+      <input
+        type="number"
+        min={0}
+        max={max}
+        value={value}
+        onChange={(event) =>
+          onChange(Math.min(max, Math.max(0, Number(event.target.value) || 0)))
+        }
+        className="h-9 w-full appearance-none rounded-lg border border-white/15 bg-[#222] px-2 text-center text-xs font-bold text-white outline-none transition focus:border-[#e5c12f] focus:ring-1 focus:ring-[#e5c12f] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
     </label>
   );
@@ -242,7 +431,7 @@ export default function PromocaoForm({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return toast.error(t("promotion.form.required"));
-    await onSubmit(state);
+    await onSubmit(preparePromotionForSubmit(state));
   };
 
   const country = locais.find((c) => c.id === activeCountry) || locais[0];
@@ -655,23 +844,48 @@ export default function PromocaoForm({
                     type="number"
                     placeholder="0,00"
                   />
-                  <Field
+                  <DateTimeField
                     label={t("promotion.form.couponStart")}
                     value={state.data_inicio}
                     onChange={(v) => update({ data_inicio: v })}
-                    type="datetime-local"
                   />
-                  <Field
+                  <DateTimeField
                     label={t("promotion.form.couponExpiration")}
                     value={state.data_expiracao}
                     onChange={(v) => update({ data_expiracao: v })}
-                    type="datetime-local"
                   />
+                </>
+              )}
+
+              {state.tipo === "colecao_vip" && (
+                <>
+                  <Field
+                    label={t("promotion.form.vipCollectionTitle")}
+                    value={state.titulo}
+                    onChange={(v) => update({ titulo: v })}
+                    error={errors.titulo}
+                    maxLength={120}
+                    placeholder="VIP Chefão"
+                  />
+                  <div className="md:col-span-2 space-y-2">
+                    <label className={labelCls}>
+                      {t("promotion.form.vipCollectionDescription")}
+                    </label>
+                    <textarea
+                      value={state.descricao ?? ""}
+                      onChange={(event) =>
+                        update({ descricao: event.target.value })
+                      }
+                      className={`${inputCls} h-28 resize-none ${errors.descricao ? "border-red-500 focus:ring-red-500" : ""}`}
+                      placeholder={t("promotion.form.detailsPlaceholder")}
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <Field
-                      label={t("promotion.form.couponBanner")}
+                      label={t("promotion.form.vipCollectionBanner")}
                       value={state.imagem}
                       onChange={(v) => update({ imagem: v })}
+                      error={errors.imagem}
                       trailing={
                         <ImageUploadButton
                           uploading={uploading}
@@ -680,7 +894,7 @@ export default function PromocaoForm({
                           uploadingTitle={t("common.uploading")}
                         />
                       }
-                      placeholder="https://..."
+                      placeholder="https://iili.io/banner.png"
                     />
                   </div>
                 </>
@@ -688,7 +902,7 @@ export default function PromocaoForm({
             </div>
 
             {/* Preview thumbnail */}
-            {state.imagem && (
+            {state.imagem && state.tipo !== "cupom" && (
               <div className="flex items-center gap-3 pt-2">
                 <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
                   <img
@@ -714,13 +928,15 @@ export default function PromocaoForm({
           </section>
 
           {/* Loja & Imagem por Cidade */}
-          {state.tipo !== "cupom" && (
+          {promotionUsesSalesChannels(state.tipo) && (
             <section className="space-y-6">
               <h3 className="text-lg font-bold border-b border-white/5 pb-2 flex items-center gap-2 text-white">
                 <LinkIcon size={18} className="text-[#e5c12f]" />
                 {state.tipo === "oferta_cidade"
                   ? t("promotion.form.storeImageByCity")
-                  : t("promotion.form.salesChannels")}
+                  : state.tipo === "colecao_vip"
+                    ? t("promotion.form.vipCollectionSalesChannels")
+                    : t("promotion.form.salesChannels")}
               </h3>
 
               {locais.length === 0 ? (
@@ -746,7 +962,9 @@ export default function PromocaoForm({
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div
+                    className={`grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl ${errors.links_por_cidade ? "ring-2 ring-red-500 p-2" : ""}`}
+                  >
                     {country?.cidades?.length ? (
                       country.cidades.map((h) => {
                         const cur = links.find(
@@ -770,9 +988,13 @@ export default function PromocaoForm({
                                   url: e.target.value,
                                 })
                               }
-                              placeholder={t(
-                                "promotion.form.storeLinkPlaceholder",
-                              )}
+                              placeholder={
+                                state.tipo === "colecao_vip"
+                                  ? t(
+                                      "promotion.form.vipCollectionTebexPlaceholder",
+                                    )
+                                  : t("promotion.form.storeLinkPlaceholder")
+                              }
                               className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-xs text-white placeholder-white/25 focus:outline-none focus:ring-2 focus:ring-[#e5c12f] font-mono"
                             />
                             {state.tipo === "oferta_cidade" && (
