@@ -1,24 +1,38 @@
 // Client-side helpers to talk to /api/apps-script (which proxies Google Apps Script)
 import { translateCurrent as t } from "@/lib/i18n";
 
-export async function appsScriptGet<T = unknown>(query: Record<string, string>): Promise<T> {
+export async function appsScriptGet<T = unknown>(
+  query: Record<string, string>,
+): Promise<T> {
   const params = new URLSearchParams(query).toString();
   const res = await fetch(`/api/apps-script?${params}`, { method: "GET" });
-  const data = (await res.json()) as T & { success?: boolean; message?: string };
-  if (!res.ok) throw new Error(data?.message || `${t("api.getFail")} (${res.status})`);
-  if (data?.success === false) throw new Error(data.message || `${t("api.getFail")}.`);
+  const data = (await res.json()) as T & {
+    success?: boolean;
+    message?: string;
+  };
+  if (!res.ok)
+    throw new Error(data?.message || `${t("api.getFail")} (${res.status})`);
+  if (data?.success === false)
+    throw new Error(data.message || `${t("api.getFail")}.`);
   return data;
 }
 
-export async function appsScriptPost<T = unknown>(body: Record<string, unknown>): Promise<T> {
+export async function appsScriptPost<T = unknown>(
+  body: Record<string, unknown>,
+): Promise<T> {
   const res = await fetch(`/api/apps-script`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = (await res.json()) as T & { success?: boolean; message?: string };
-  if (!res.ok) throw new Error(data?.message || `${t("api.postFail")} (${res.status})`);
-  if (data?.success === false) throw new Error(data.message || `${t("api.postFail")}.`);
+  const data = (await res.json()) as T & {
+    success?: boolean;
+    message?: string;
+  };
+  if (!res.ok)
+    throw new Error(data?.message || `${t("api.postFail")} (${res.status})`);
+  if (data?.success === false)
+    throw new Error(data.message || `${t("api.postFail")}.`);
   return data;
 }
 
@@ -35,7 +49,14 @@ export async function uploadImage(base64OrDataUrl: string): Promise<string> {
 
 // ---------- Types ----------
 
-export type PromocaoTipo = "vip_mensal" | "oferta_flash" | "link_exclusivo" | "battlepass" | string;
+export type PromocaoTipo =
+  | "vip_mensal"
+  | "oferta_flash"
+  | "link_exclusivo"
+  | "battlepass"
+  | "oferta_cidade"
+  | "cupom"
+  | string;
 export type PromocaoStatus = "ativo" | "inativo" | string;
 
 export interface LinkPorCidade {
@@ -72,6 +93,10 @@ export interface Promocao {
   preco_total?: string;
   preco_desconto?: string;
   percentual_desconto?: string;
+  categoria?: string;
+  valor_minimo?: string;
+  data_inicio?: string;
+  data_expiracao?: string;
   video?: string;
   link?: string;
   links_por_cidade?: LinkPorCidade[];
@@ -125,10 +150,13 @@ interface BootstrapEnvelope {
 }
 
 export async function fetchBootstrap(): Promise<BootstrapPayload> {
-  const raw = await appsScriptGet<BootstrapEnvelope>({ action: "bootstrapData" });
-  const inner = (raw?.data as { payload?: BootstrapPayload })?.payload
-    ?? (raw?.data as BootstrapPayload)
-    ?? ({} as BootstrapPayload);
+  const raw = await appsScriptGet<BootstrapEnvelope>({
+    action: "bootstrapData",
+  });
+  const inner =
+    (raw?.data as { payload?: BootstrapPayload })?.payload ??
+    (raw?.data as BootstrapPayload) ??
+    ({} as BootstrapPayload);
   return {
     interface: inner.interface || {},
     locais: Array.isArray(inner.locais) ? inner.locais : [],
@@ -154,7 +182,8 @@ function normalizePromocao(p: Partial<Promocao>): Promocao {
     status: p.status || "ativo",
     tipo: p.tipo || "vip_mensal",
     nome: p.nome || "",
-    nome_interno: p.nome_interno || p.nome || p.titulo || t("home.newPromotion"),
+    nome_interno:
+      p.nome_interno || p.nome || p.titulo || t("home.newPromotion"),
     descricao: p.descricao || "",
     cupom: p.cupom || "",
     validade: p.validade || "",
@@ -170,12 +199,18 @@ function normalizePromocao(p: Partial<Promocao>): Promocao {
     preco_total: p.preco_total || "",
     preco_desconto: p.preco_desconto || "",
     percentual_desconto: p.percentual_desconto || "",
+    categoria: p.categoria || "",
+    valor_minimo: p.valor_minimo || "",
+    data_inicio: p.data_inicio || "",
+    data_expiracao: p.data_expiracao || "",
     video: p.video || "",
     link: p.link || "",
     data_criacao: p.data_criacao || now,
     criadoEm: p.criadoEm || p.data_criacao || now,
     atualizadoEm: now,
-    links_por_cidade: Array.isArray(p.links_por_cidade) ? p.links_por_cidade : [],
+    links_por_cidade: Array.isArray(p.links_por_cidade)
+      ? p.links_por_cidade
+      : [],
   };
 }
 
@@ -185,7 +220,10 @@ export async function criarPromocao(p: Partial<Promocao>): Promise<Promocao> {
   return payload;
 }
 
-export async function atualizarPromocao(id: string, p: Partial<Promocao>): Promise<Promocao> {
+export async function atualizarPromocao(
+  id: string,
+  p: Partial<Promocao>,
+): Promise<Promocao> {
   const payload = normalizePromocao({ ...p, id });
   await appsScriptPost({ action: "atualizarPromocao", ...payload });
   return payload;
@@ -207,7 +245,10 @@ export async function criarConta(input: {
   await appsScriptPost({ action: "criarConta", ...input });
 }
 
-export async function atualizarConta(id: string, input: Partial<Conta> & { senha?: string }): Promise<void> {
+export async function atualizarConta(
+  id: string,
+  input: Partial<Conta> & { senha?: string },
+): Promise<void> {
   await appsScriptPost({ action: "atualizarConta", id, ...input });
 }
 
@@ -221,16 +262,23 @@ export async function salvarInterface(
   usuario: string = "OWNER",
 ): Promise<void> {
   const { contas: _contas, promocoes: _promocoes, ...dadosLeves } = dados;
-  await appsScriptPost({ action: "salvarInterface", dados: dadosLeves, usuario, alteradoPor: usuario });
+  await appsScriptPost({
+    action: "salvarInterface",
+    dados: dadosLeves,
+    usuario,
+    alteradoPor: usuario,
+  });
 }
 
 // Helper para slugify id de país/cidade novos
 export function slugify(input: string): string {
-  return input
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 32) || Math.random().toString(36).slice(2, 8);
+  return (
+    input
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 32) || Math.random().toString(36).slice(2, 8)
+  );
 }
