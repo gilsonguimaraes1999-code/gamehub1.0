@@ -2,12 +2,24 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, Check, Pencil, Globe } from "lucide-react";
+import {
+  ArrowLeft,
+  Copy,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Globe,
+} from "lucide-react";
 import { fetchBootstrap, type Promocao } from "@/lib/sghub-api";
 import { useAuthSession } from "@/lib/auth-store";
 import { hasPermission } from "@/lib/permissions";
 import ModalPreview from "@/components/sghub/ModalPreview";
 import { useI18n } from "@/lib/i18n";
+import {
+  getAdjacentPreviewIndex,
+  getPromotionPreviewPages,
+} from "@/lib/promotion-types";
 
 export const Route = createFileRoute("/hub/detalhes/$id")({
   ssr: false,
@@ -285,6 +297,13 @@ function DetalhesPage() {
         </div>
       </div>
 
+      <PromotionDetailsPreview
+        promocao={promocao}
+        cityNames={cityNames}
+        countryNames={countryNames}
+        cityToCountry={cityToCountry}
+      />
+
       {/* Field cards */}
       <div className="space-y-4">
         {fields.map((f) => (
@@ -418,22 +437,11 @@ function DetalhesPage() {
           </div>
         </div>
       )}
-
-      {/* Preview por cidade (Oferta da Cidade) */}
-      {promocao.tipo === "oferta_cidade" &&
-        (promocao.links_por_cidade || []).length > 0 && (
-          <PreviewPorCidade
-            promocao={promocao}
-            cityNames={cityNames}
-            countryNames={countryNames}
-            cityToCountry={cityToCountry}
-          />
-        )}
     </div>
   );
 }
 
-function PreviewPorCidade({
+function PromotionDetailsPreview({
   promocao,
   cityNames,
   countryNames,
@@ -444,60 +452,70 @@ function PreviewPorCidade({
   countryNames: Map<string, string>;
   cityToCountry: Map<string, string>;
 }) {
-  const links = promocao.links_por_cidade || [];
   const { t } = useI18n();
   const [selected, setSelected] = useState(0);
-  const current = links[selected] || links[0];
-  const cityName =
-    cityNames.get(current.cityId) ||
-    current.cityId ||
-    `${t("common.city")} ${selected + 1}`;
-  const countryId =
-    current.countryId || cityToCountry.get(current.cityId) || "";
+  const pages = getPromotionPreviewPages(promocao);
+  const currentIndex = Math.min(selected, pages.length - 1);
+  const currentPage = pages[currentIndex];
+  const currentLink = currentPage.links_por_cidade?.[0];
+  const isCityOffer = promocao.tipo === "oferta_cidade";
+  const cityName = currentLink
+    ? cityNames.get(currentLink.cityId) ||
+      currentLink.cityId ||
+      `${t("common.city")} ${currentIndex + 1}`
+    : t("details.other");
+  const countryId = currentLink
+    ? currentLink.countryId || cityToCountry.get(currentLink.cityId) || ""
+    : "";
   const countryName = countryNames.get(countryId) || "";
 
+  const move = (direction: -1 | 1) => {
+    setSelected((index) =>
+      getAdjacentPreviewIndex(index, pages.length, direction),
+    );
+  };
+
   return (
-    <div className="mt-10">
-      <div className="mb-5 flex items-center justify-center">
-        <span className="text-[11px] font-black uppercase tracking-[0.25em] text-white/60">
-          {t("details.previewByCity")}
-        </span>
-      </div>
+    <div className="mb-10">
+      {isCityOffer && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#141414]/80 p-3">
+          <button
+            type="button"
+            onClick={() => move(-1)}
+            disabled={pages.length <= 1}
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/75 transition hover:border-[#d4af37]/50 hover:text-[#f9e29f] disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            <ChevronLeft size={14} /> {t("details.previousCity")}
+          </button>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {links.map((l, i) => {
-          const name =
-            cityNames.get(l.cityId) ||
-            l.cityId ||
-            `${t("common.city")} ${i + 1}`;
-          const active = i === selected;
-          return (
-            <button
-              key={`${l.cityId}-${i}`}
-              onClick={() => setSelected(i)}
-              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[11px] font-black uppercase tracking-widest transition ${
-                active
-                  ? "border-[#d4af37] bg-[#d4af37] text-black"
-                  : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:text-white"
-              }`}
-            >
-              <Globe size={12} />
-              {name}
-            </button>
-          );
-        })}
-      </div>
+          <div className="min-w-0 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm font-black text-white">
+              <Globe size={14} className="shrink-0 text-[#d4af37]" />
+              <span className="truncate">
+                {cityName}
+                {countryName ? ` — ${countryName}` : ""}
+              </span>
+            </div>
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-white/45">
+              {t("details.cityCounter", {
+                current: currentIndex + 1,
+                total: pages.length,
+              })}
+            </div>
+          </div>
 
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <Globe size={14} className="text-[#d4af37]" />
-          <span className="text-[11px] font-black uppercase tracking-widest text-white">
-            {cityName}
-            {countryName ? ` — ${countryName}` : ""}
-          </span>
+          <button
+            type="button"
+            onClick={() => move(1)}
+            disabled={pages.length <= 1}
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white/75 transition hover:border-[#d4af37]/50 hover:text-[#f9e29f] disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {t("details.nextCity")} <ChevronRight size={14} />
+          </button>
         </div>
-        <ModalPreview p={{ ...promocao, links_por_cidade: [current] }} />
-      </div>
+      )}
+
+      <ModalPreview p={currentPage} />
     </div>
   );
 }
