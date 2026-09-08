@@ -62,6 +62,29 @@ export function getCouponTimeRemaining(
   };
 }
 
+export function getPromotionPreviewPages(
+  promotion: Partial<Promocao>,
+): Partial<Promocao>[] {
+  const links = promotion.links_por_cidade || [];
+  if (promotion.tipo !== "oferta_cidade" || links.length === 0) {
+    return [promotion];
+  }
+
+  return links.map((link) => ({
+    ...promotion,
+    links_por_cidade: [link],
+  }));
+}
+
+export function getAdjacentPreviewIndex(
+  current: number,
+  total: number,
+  direction: -1 | 1,
+): number {
+  if (total <= 1) return 0;
+  return (current + direction + total) % total;
+}
+
 export function promotionUsesSalesChannels(tipo?: string): boolean {
   return tipo !== "cupom";
 }
