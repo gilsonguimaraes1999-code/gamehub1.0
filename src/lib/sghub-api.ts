@@ -56,6 +56,7 @@ export type PromocaoTipo =
   | "battlepass"
   | "oferta_cidade"
   | "cupom"
+  | "colecao_vip"
   | string;
 export type PromocaoStatus = "ativo" | "inativo" | string;
 

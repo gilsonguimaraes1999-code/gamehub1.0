@@ -7,6 +7,9 @@ export interface PromotionValidationInput {
   categoria?: string;
   percentual_desconto?: string;
   link?: string;
+  descricao?: string;
+  imagem?: string;
+  links_por_cidade?: Array<{ url?: string }>;
 }
 
 export function getPromotionValidationErrors(
@@ -26,6 +29,14 @@ export function getPromotionValidationErrors(
     if (!promotion.percentual_desconto?.trim())
       errors.percentual_desconto = true;
     if (!promotion.link?.trim()) errors.link = true;
+  }
+
+  if (promotion.tipo === "colecao_vip") {
+    if (!promotion.titulo?.trim()) errors.titulo = true;
+    if (!promotion.descricao?.trim()) errors.descricao = true;
+    if (!promotion.imagem?.trim()) errors.imagem = true;
+    if (!promotion.links_por_cidade?.some((item) => item.url?.trim()))
+      errors.links_por_cidade = true;
   }
 
   return errors;

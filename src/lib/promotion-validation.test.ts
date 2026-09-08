@@ -35,6 +35,41 @@ test("cupom accepts the required fields when filled", () => {
   );
 });
 
+test("colecao VIP requires title, description, banner and a Tebex URL", () => {
+  assert.deepEqual(
+    getPromotionValidationErrors({
+      tipo: "colecao_vip",
+      nome_interno: "Coleção VIP Chefão",
+      titulo: "",
+      descricao: "",
+      imagem: "",
+      links_por_cidade: [],
+    }),
+    {
+      titulo: true,
+      descricao: true,
+      imagem: true,
+      links_por_cidade: true,
+    },
+  );
+});
+
+test("colecao VIP accepts its required content", () => {
+  assert.deepEqual(
+    getPromotionValidationErrors({
+      tipo: "colecao_vip",
+      nome_interno: "Coleção VIP Chefão",
+      titulo: "VIP Chefão",
+      descricao: "Luxo, exclusividade e benefícios.",
+      imagem: "https://example.com/banner.png",
+      links_por_cidade: [
+        { countryId: "brasil", cityId: "nobre", url: "https://tebex.io/vip" },
+      ],
+    }),
+    {},
+  );
+});
+
 test("existing promotion validation remains intact", () => {
   assert.deepEqual(
     getPromotionValidationErrors({
