@@ -297,13 +297,6 @@ function DetalhesPage() {
         </div>
       </div>
 
-      <PromotionDetailsPreview
-        promocao={promocao}
-        cityNames={cityNames}
-        countryNames={countryNames}
-        cityToCountry={cityToCountry}
-      />
-
       {/* Field cards */}
       <div className="space-y-4">
         {fields.map((f) => (
@@ -437,6 +430,13 @@ function DetalhesPage() {
           </div>
         </div>
       )}
+
+      <PromotionDetailsPreview
+        promocao={promocao}
+        cityNames={cityNames}
+        countryNames={countryNames}
+        cityToCountry={cityToCountry}
+      />
     </div>
   );
 }
@@ -476,7 +476,7 @@ function PromotionDetailsPreview({
   };
 
   return (
-    <div className="mb-10">
+    <div className="mb-10 mt-10">
       {isCityOffer && (
         <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#141414]/80 p-3">
           <button
