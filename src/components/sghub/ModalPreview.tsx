@@ -374,12 +374,14 @@ export default function ModalPreview({ p }: { p: Partial<Promocao> }) {
         </div>
 
         {/* Image */}
-        <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-black/60 border border-white/5 mb-4 flex items-center justify-center">
+        <div
+          className={`w-full rounded-xl overflow-hidden bg-black/60 border border-white/5 mb-4 flex items-center justify-center ${image ? "" : "aspect-[4/3]"}`}
+        >
           {image ? (
             <img
               src={image}
               alt="preview"
-              className="w-full h-full object-contain"
+              className="h-auto w-full object-contain"
             />
           ) : (
             <div className="text-white/20 text-xs uppercase tracking-widest">
