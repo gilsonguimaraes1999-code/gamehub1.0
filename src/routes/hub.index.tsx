@@ -34,6 +34,7 @@ const TIPO_LABEL_KEYS: Record<string, string> = {
   battlepass: "promotion.type.battlepass",
   oferta_cidade: "promotion.type.oferta_cidade",
   cupom: "promotion.type.cupom",
+  colecao_vip: "promotion.type.colecao_vip",
 };
 
 const TIPO_TABS = [
@@ -44,6 +45,7 @@ const TIPO_TABS = [
   { key: "battlepass", labelKey: "promotion.type.battlepass" },
   { key: "oferta_cidade", labelKey: "promotion.type.oferta_cidade" },
   { key: "cupom", labelKey: "promotion.type.cupom" },
+  { key: "colecao_vip", labelKey: "promotion.type.colecao_vip" },
 ];
 
 type StatusFilter = "todos" | "ativo" | "inativo";
@@ -551,7 +553,14 @@ function buildPromoLines(
       fieldLine(t("promotion.field.minimumPurchase"), p.valor_minimo),
       fieldLine(t("promotion.field.startDate"), p.data_inicio),
       fieldLine(t("promotion.field.expirationDate"), p.data_expiracao),
-      fieldLine(t("common.image"), p.imagem),
+    ];
+  if (tipo === "colecao_vip")
+    return [
+      fieldLine(t("common.city"), cityName),
+      fieldLine(t("common.title"), p.titulo),
+      fieldLine(t("common.description"), p.descricao),
+      fieldLine(t("promotion.form.vipCollectionTebex"), cityUrl),
+      fieldLine(t("promotion.form.vipCollectionBanner"), p.imagem),
     ];
   return [
     fieldLine(t("common.city"), cityName),

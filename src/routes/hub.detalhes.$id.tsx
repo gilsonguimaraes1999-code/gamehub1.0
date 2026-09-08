@@ -21,6 +21,7 @@ const TIPO_LABEL_KEYS: Record<string, string> = {
   battlepass: "promotion.type.battlepass",
   oferta_cidade: "promotion.type.oferta_cidade",
   cupom: "promotion.type.cupom",
+  colecao_vip: "promotion.type.colecao_vip",
 };
 
 type Field = { label: string; value: string; isImage?: boolean };
@@ -78,7 +79,12 @@ function fieldsFor(
       f(t("promotion.field.minimumPurchase"), v(p.valor_minimo)),
       f(t("promotion.field.startDate"), v(p.data_inicio)),
       f(t("promotion.field.expirationDate"), v(p.data_expiracao)),
-      f(t("common.image"), v(p.imagem), true),
+    ];
+  if (tipo === "colecao_vip")
+    return [
+      f(t("common.title"), v(p.titulo)),
+      f(t("common.description"), v(p.descricao)),
+      f(t("promotion.form.vipCollectionBanner"), v(p.imagem), true),
     ];
   return [
     f(t("common.name"), v(p.nome)),
